@@ -7,6 +7,8 @@ import OnyxPatchReview from './components/OnyxPatchReview';
 import ReplayOrchestrator from './components/ReplayOrchestrator';
 import EdgeTelemetry from './components/EdgeTelemetry';
 import OnyxProxies from './components/OnyxProxies';
+import SystemConfig from './components/SystemConfig';
+import DlqRecords from './components/DlqRecords';
 import { useEchoData } from './hooks/useEchoData';
 
 export default function App() {
@@ -19,8 +21,7 @@ export default function App() {
     setSelectedIds, 
     isReplaying, 
     replayProgress, 
-    handleReplay,
-    setRecords
+    handleReplay
   } = useEchoData();
 
   const handleApprovePatch = (id) => {
@@ -35,23 +36,30 @@ export default function App() {
           <>
             <StatsOverview records={records} />
             <DlqAggregationFeed 
-              records={records}
+              records={records.slice(0, 5)} // Only recent 5 for overview
               selectedIds={selectedIds}
               onSelect={setSelectedIds}
               onRowClick={setViewingRecord}
             />
           </>
         );
+      case 'DLQ Records':
+        return (
+          <DlqRecords 
+            records={records}
+            selectedIds={selectedIds}
+            onSelect={setSelectedIds}
+            onRowClick={setViewingRecord}
+          />
+        );
       case 'Edge Telemetry':
         return <EdgeTelemetry />;
       case 'Onyx Proxies':
         return <OnyxProxies />;
+      case 'System Config':
+        return <SystemConfig />;
       default:
-        return (
-          <div className="h-64 flex items-center justify-center border border-dashed border-slate-800 rounded-2xl">
-            <p className="text-slate-500">Module Provisioning in Progress...</p>
-          </div>
-        );
+        return null;
     }
   };
 
