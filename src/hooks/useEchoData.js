@@ -84,29 +84,28 @@ export function useEchoData() {
     };
   }, []);
 
-  const handleReplay = useCallback(() => {
+  const handleReplay = useCallback(async () => {
     if (selectedIds.length === 0) return;
     setIsReplaying(true);
-    setReplayProgress(0);
+    setReplayProgress(50);
 
-    // Keep replay logic as simulated for now as per instructions (backend ingress focus)
-    const interval = setInterval(() => {
-      setReplayProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            // Replay orchestrated, mark as resolved locally or wait for real update
-            setRecords(prevRecs => prevRecs.map(r => 
-              selectedIds.includes(r.id) ? { ...r, status: 'resolved' } : r
-            ));
-            setSelectedIds([]);
-            setIsReplaying(false);
-          }, 500);
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 100);
+    try {
+      if (import.meta.env.VITE_SUPABASE_URL) {
+        await supabase
+          .from(echoService.getTableName())
+          .update({ status: 'replaying' })
+          .in('id', selectedIds);
+      }
+      setReplayProgress(100);
+      setTimeout(() => {
+        setSelectedIds([]);
+        setIsReplaying(false);
+      }, 500);
+    } catch (err) {
+      console.error("Failed to trigger replay:", err);
+      setIsReplaying(false);
+      setReplayProgress(0);
+    }
   }, [selectedIds]);
 
   return {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import '@questlabs/react-sdk/dist/style.css';
+import { useEchoData } from "./hooks/useEchoData";
+import { echoService } from "./services/echoService";
 import Sidebar from './components/layout/Sidebar';
 import StatsOverview from './components/StatsOverview';
 import DlqAggregationFeed from './components/DlqAggregationFeed';
@@ -27,12 +29,17 @@ export default function App() {
   } = useEchoData();
 
   const handleApprovePatch = async (id) => {
-    // Optimistically update
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+
+    try {
+      await echoService.approvePatch(id, record.proposed_patch);
+    } catch (err) {
+      console.error("Failed to approve patch:", err);
+    }
+
     setViewingRecord(null);
     setSelectedIds(prev => !prev.includes(id) ? [...prev, id] : prev);
-
-    // Assuming we have the patch in the record, this would normally be passed in
-    // For now we don't apply anything backend side on approve, as requested not to build that logic
   };
 
   const renderContent = () => {
