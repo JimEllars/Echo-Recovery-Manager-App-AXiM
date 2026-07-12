@@ -9,7 +9,6 @@ import EdgeTelemetry from './components/EdgeTelemetry';
 import OnyxProxies from './components/OnyxProxies';
 import SystemConfig from './components/SystemConfig';
 import DlqRecords from './components/DlqRecords';
-import { useEchoData } from './hooks/useEchoData';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('Cockpit Overview');
@@ -21,20 +20,44 @@ export default function App() {
     setSelectedIds, 
     isReplaying, 
     replayProgress, 
-    handleReplay
+    handleReplay,
+    isLoading,
+    isOnline,
+    error
   } = useEchoData();
 
-  const handleApprovePatch = (id) => {
+  const handleApprovePatch = async (id) => {
+    // Optimistically update
     setViewingRecord(null);
     setSelectedIds(prev => !prev.includes(id) ? [...prev, id] : prev);
+
+    // Assuming we have the patch in the record, this would normally be passed in
+    // For now we don't apply anything backend side on approve, as requested not to build that logic
   };
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+         <div className="flex flex-col items-center justify-center h-64 text-slate-400">
+           <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+           <p>Connecting to Edge Ingress...</p>
+         </div>
+      );
+    }
+
     switch (activeTab) {
       case 'Cockpit Overview':
         return (
           <>
             <StatsOverview records={records} />
+
+            {!isOnline && (
+              <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                 <p className="text-sm">Connection to Live Telemetry Lost. Displaying cached data.</p>
+              </div>
+            )}
+
             <DlqAggregationFeed 
               records={records.slice(0, 5)} // Only recent 5 for overview
               selectedIds={selectedIds}
@@ -45,12 +68,20 @@ export default function App() {
         );
       case 'DLQ Records':
         return (
-          <DlqRecords 
-            records={records}
-            selectedIds={selectedIds}
-            onSelect={setSelectedIds}
-            onRowClick={setViewingRecord}
-          />
+          <>
+            {!isOnline && (
+              <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                 <p className="text-sm">Connection to Live Telemetry Lost. Displaying cached data.</p>
+              </div>
+            )}
+            <DlqRecords
+              records={records}
+              selectedIds={selectedIds}
+              onSelect={setSelectedIds}
+              onRowClick={setViewingRecord}
+            />
+          </>
         );
       case 'Edge Telemetry':
         return <EdgeTelemetry />;
@@ -65,7 +96,7 @@ export default function App() {
 
   return (
     <div className="flex h-screen bg-slate-950 font-sans overflow-hidden">
-      <Sidebar activeTab={activeTab} onNavigate={setActiveTab} />
+      <Sidebar activeTab={activeTab} onNavigate={setActiveTab} isOnline={isOnline} />
       
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex items-center px-8 shrink-0">
@@ -77,8 +108,8 @@ export default function App() {
             <span>Environment: <strong className="text-cyan-400 font-mono">PRODUCTION</strong></span>
             <span className="w-px h-4 bg-slate-700"></span>
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span>Edge Workers: Active</span>
+              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{isOnline ? 'Edge Workers: Active' : 'Edge Workers: Offline'}</span>
             </div>
           </div>
         </header>

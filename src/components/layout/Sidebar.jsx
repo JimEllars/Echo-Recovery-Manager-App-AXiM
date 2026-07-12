@@ -12,7 +12,7 @@ const navItems = [
   { icon: FiSettings, label: 'System Config' },
 ];
 
-export default function Sidebar({ activeTab, onNavigate }) {
+export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {
   return (
     <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen shrink-0">
       <div className="p-6 flex items-center gap-3 border-b border-slate-800">
@@ -42,8 +42,10 @@ export default function Sidebar({ activeTab, onNavigate }) {
       </nav>
       <div className="p-4 border-t border-slate-800">
         <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-xs text-slate-400 font-medium">AXiM Core Online</span>
+          <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+          <span className={`text-xs font-medium ${isOnline ? 'text-slate-400' : 'text-red-400'}`}>
+             {isOnline ? 'AXiM Core Online' : 'AXiM Core Offline'}
+          </span>
         </div>
       </div>
     </div>

@@ -1,48 +1,87 @@
 import { useState, useEffect, useCallback } from 'react';
-import { initialDlqRecords } from '../data/mockDlq';
+import { echoService } from '../services/echoService';
+import { supabase } from '../supabase/supabase';
 
 export function useEchoData() {
-  const [records, setRecords] = useState(initialDlqRecords);
+  const [records, setRecords] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isReplaying, setIsReplaying] = useState(false);
   const [replayProgress, setReplayProgress] = useState(0);
 
-  // Simulated Real-Time Ingress Aggregation
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isOnline, setIsOnline] = useState(true);
+
   useEffect(() => {
-    const ingressInterval = setInterval(() => {
-      const newRecord = {
-        id: `req-${Math.random().toString(36).substr(2, 7)}`,
-        source_node: ['Asguard WAF', 'Green Machine', 'Enrichment Bridge'][Math.floor(Math.random() * 3)],
-        target_destination: 'api.axim.internal/v2/ingest',
-        error_reason: 'Potential Schema Collision: Unexpected field "uuid_v5"',
-        original_payload: { event: "ping", timestamp: Date.now() },
-        proposed_patch: null,
-        status: 'pending',
-        timestamp: new Date().toISOString()
-      };
+    let channel;
+
+    const loadInitialData = async () => {
+      setIsLoading(true);
+      setError(null);
       
-      setRecords(prev => [newRecord, ...prev].slice(0, 50));
-    }, 15000); // New failure every 15 seconds
+      try {
+        const { data, error: fetchError } = await echoService.fetchRecords();
 
-    return () => clearInterval(ingressInterval);
-  }, []);
-
-  // Simulated Onyx Auto-Triage
-  useEffect(() => {
-    const triageInterval = setInterval(() => {
-      setRecords(prev => prev.map(rec => {
-        if (rec.status === 'pending' && Math.random() > 0.7) {
-          return {
-            ...rec,
-            status: 'patched',
-            proposed_patch: { ...rec.original_payload, _onyx_fix: "sanitized" }
-          };
+        if (fetchError) {
+          throw fetchError;
         }
-        return rec;
-      }));
-    }, 5000);
 
-    return () => clearInterval(triageInterval);
+        setRecords(data || []);
+        setIsOnline(true);
+      } catch (err) {
+        console.error("Failed to fetch initial data:", err);
+        setError(err.message || "Failed to connect to database");
+        setIsOnline(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const setupSubscription = () => {
+      // Return early if no supabase url is configured
+      if (!import.meta.env.VITE_SUPABASE_URL) {
+         setIsOnline(false);
+         setError("Supabase URL not configured.");
+         setIsLoading(false);
+         return;
+      }
+
+      channel = supabase
+        .channel('public:echo_dlq_records')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: echoService.getTableName() },
+          (payload) => {
+            console.log('Real-time update received:', payload);
+
+            if (payload.eventType === 'INSERT') {
+              setRecords((prev) => [payload.new, ...prev]);
+            } else if (payload.eventType === 'UPDATE') {
+               setRecords((prev) => prev.map(rec => rec.id === payload.new.id ? payload.new : rec));
+            } else if (payload.eventType === 'DELETE') {
+               setRecords((prev) => prev.filter(rec => rec.id !== payload.old.id));
+            }
+          }
+        )
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') {
+            setIsOnline(true);
+            setError(null);
+          } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+             console.error("Supabase realtime connection lost.", err);
+             setIsOnline(false);
+          }
+        });
+    };
+
+    loadInitialData();
+    setupSubscription();
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   const handleReplay = useCallback(() => {
@@ -50,11 +89,13 @@ export function useEchoData() {
     setIsReplaying(true);
     setReplayProgress(0);
 
+    // Keep replay logic as simulated for now as per instructions (backend ingress focus)
     const interval = setInterval(() => {
       setReplayProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           setTimeout(() => {
+            // Replay orchestrated, mark as resolved locally or wait for real update
             setRecords(prevRecs => prevRecs.map(r => 
               selectedIds.includes(r.id) ? { ...r, status: 'resolved' } : r
             ));
@@ -75,6 +116,9 @@ export function useEchoData() {
     isReplaying,
     replayProgress,
     handleReplay,
-    setRecords
+    setRecords,
+    isLoading,
+    error,
+    isOnline
   };
 }
