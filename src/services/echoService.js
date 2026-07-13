@@ -70,6 +70,41 @@ export const echoService = {
   },
 
   // Expose table name for subscriptions
+
+
+  async triggerTriage(recordId) {
+    const workerUrl = import.meta.env.VITE_WORKER_URL;
+    if (!workerUrl) {
+      console.warn("VITE_WORKER_URL is not set.");
+      return { error: 'Worker URL not configured' };
+    }
+
+    const apiUrl = `${workerUrl}/api/v1/triage`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+            },
+            body: JSON.stringify({ recordId })
+        });
+
+        if (!response.ok) {
+             const errorText = await response.text();
+             console.error("Worker triage failed", errorText);
+             return { error: 'Failed to trigger triage in worker' };
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch(err) {
+        console.error("Worker triage request failed:", err);
+        return { error: 'Failed to trigger triage request' };
+    }
+  },
   getTableName() {
     return TABLE_NAME;
   }

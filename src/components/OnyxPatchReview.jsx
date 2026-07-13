@@ -1,16 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { echoService } from '../services/echoService';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import Badge from './ui/Badge';
 
-const { FiX, FiCheck, FiTerminal } = FiIcons;
+const { FiX, FiCheck, FiTerminal, FiCpu } = FiIcons;
 
 export default function OnyxPatchReview({ record, onClose, onApprove }) {
+
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    await echoService.triggerTriage(record.id);
+    // Let real-time updates change the prop, but we might want to stop the loader after a few seconds if it's mock
+    // or just leave it since the component might re-render or close if updated externally.
+    // For safety, we stop it after 5 seconds if real-time doesn't catch it quickly.
+    setTimeout(() => {
+        setIsGenerating(false);
+    }, 5000);
+  };
+
   if (!record) return null;
 
   const originalStr = JSON.stringify(record.original_payload, null, 2);
-  const patchStr = record.proposed_patch ? JSON.stringify(record.proposed_patch, null, 2) : 'No patch proposed by Onyx.';
+  const patchStr = record.proposed_patch ? JSON.stringify(record.proposed_patch, null, 2) : (isGenerating ? 'Onyx AI Processing...' : 'No patch proposed by Onyx.');
 
   return (
     <AnimatePresence>
@@ -74,6 +89,7 @@ export default function OnyxPatchReview({ record, onClose, onApprove }) {
             </div>
           </div>
 
+
           {/* Footer */}
           <div className="px-6 py-4 border-t border-slate-800 bg-slate-900/50 flex justify-end gap-3">
             <button 
@@ -82,6 +98,16 @@ export default function OnyxPatchReview({ record, onClose, onApprove }) {
             >
               Cancel
             </button>
+            {!record.proposed_patch && record.status !== 'patched' && record.status !== 'resolved' && (
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="px-6 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-500 text-white transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-purple-500/20"
+              >
+                <SafeIcon icon={FiCpu} className={isGenerating ? "animate-spin" : ""} />
+                {isGenerating ? "Onyx Processing..." : "Generate Patch"}
+              </button>
+            )}
             <button 
               onClick={() => onApprove(record.id)}
               disabled={record.status !== 'patched'}

@@ -1,4 +1,4 @@
-import { Env, CORS_HEADERS } from './index';
+import { Env, getCorsHeaders } from './index';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
@@ -19,7 +19,7 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
   if (!isValid) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 
@@ -29,7 +29,7 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Bad Request: Invalid JSON', details: (error as Error).message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 
@@ -38,7 +38,7 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
   if (!recordIds || !Array.isArray(recordIds) || recordIds.length === 0) {
     return new Response(JSON.stringify({ error: 'Bad Request: recordIds must be a non-empty array' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 
@@ -69,7 +69,7 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
     if (!records || records.length === 0) {
       return new Response(JSON.stringify({ error: 'No matching records found' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
       });
     }
 
@@ -131,13 +131,13 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
 
     return new Response(JSON.stringify({ success: true, results }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Internal Server Error', details: (error as Error).message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 }
