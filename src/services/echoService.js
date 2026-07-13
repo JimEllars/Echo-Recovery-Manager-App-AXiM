@@ -36,8 +36,37 @@ export const echoService = {
     // In production, this calls the Cloudflare Worker endpoint
     console.log(`Triggering replay for ${recordIds.length} records...`);
     
-    // Simulate API call to /api/v1/replay
-    return new Promise((resolve) => setTimeout(resolve, 1000));
+    const workerUrl = import.meta.env.VITE_WORKER_URL;
+    if (!workerUrl) {
+      console.warn("VITE_WORKER_URL is not set. Simulating replay locally.");
+      return new Promise((resolve) => setTimeout(resolve, 1000));
+    }
+
+    const apiUrl = `${workerUrl}/api/v1/replay`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+            },
+            body: JSON.stringify({ recordIds })
+        });
+
+        if (!response.ok) {
+             const errorText = await response.text();
+             console.error("Worker replay failed", errorText);
+             return { error: 'Failed to trigger replay in worker' };
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch(err) {
+        console.error("Worker replay request failed:", err);
+        return { error: 'Failed to trigger replay request' };
+    }
   },
 
   // Expose table name for subscriptions
