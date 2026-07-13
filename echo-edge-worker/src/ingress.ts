@@ -1,4 +1,4 @@
-import { Env, CORS_HEADERS } from './index';
+import { Env, getCorsHeaders } from './index';
 
 export async function handleIngress(request: Request, env: Env): Promise<Response> {
   // Validate Authorization header
@@ -17,7 +17,7 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
   if (!isValid) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 
@@ -29,13 +29,13 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
     if (!payload || typeof payload !== 'object') {
         return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), {
             status: 400,
-            headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+            headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
           });
     }
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Bad Request: Invalid JSON', details: (error as Error).message }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 
@@ -70,20 +70,20 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
        console.error("Supabase insert failed", errorText);
        return new Response(JSON.stringify({ error: 'Failed to insert record into database', details: errorText }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+        headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
       });
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Record ingested successfully' }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
 
   } catch (error) {
     console.error("Fetch failed", error);
     return new Response(JSON.stringify({ error: 'Internal Server Error', details: (error as Error).message }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });
   }
 }
