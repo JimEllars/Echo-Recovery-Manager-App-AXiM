@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { echoService } from '../services/echoService';
 import { supabase } from '../supabase/supabase';
+import { toast } from 'react-toastify';
 
 export function useEchoData() {
   const [records, setRecords] = useState([]);
@@ -96,6 +97,22 @@ export function useEchoData() {
           .update({ status: 'replaying' })
           .in('id', selectedIds);
       }
+
+      const response = await echoService.triggerReplay(selectedIds);
+
+      if (response && response.success) {
+        let successes = 0;
+        let failures = 0;
+        for (const res of response.results) {
+          if (res.success) successes++;
+          else failures++;
+        }
+
+        toast.success(`Replay complete: ${successes} injected, ${failures} failed.`);
+      } else {
+        toast.error(`Replay failed: ${response?.error || 'Unknown error'}`);
+      }
+
       setReplayProgress(100);
       setTimeout(() => {
         setSelectedIds([]);
@@ -103,6 +120,7 @@ export function useEchoData() {
       }, 500);
     } catch (err) {
       console.error("Failed to trigger replay:", err);
+      toast.error(`Failed to trigger replay: ${err.message}`);
       setIsReplaying(false);
       setReplayProgress(0);
     }
