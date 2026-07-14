@@ -2,6 +2,41 @@ import { Env, getCorsHeaders } from './index';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
+/**
+ * Extracts valid JSON from a string that might be wrapped in Markdown code blocks.
+ * Handles ```json ... ``` and plain ``` ... ``` blocks.
+ */
+function extractJsonFromMarkdown(llmResponse: string): any {
+  try {
+    // If it's already a valid JSON string, parse it directly
+    return JSON.parse(llmResponse);
+  } catch {
+    // Match everything inside markdown code blocks, non-greedy
+    const match = llmResponse.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    if (match && match[1]) {
+      try {
+        return JSON.parse(match[1].trim());
+      } catch (innerError) {
+        throw new Error(`Failed to parse extracted JSON block: ${(innerError as Error).message}`);
+      }
+    }
+
+    // If no markdown blocks, try to find the first '{' and last '}'
+    const startIdx = llmResponse.indexOf('{');
+    const endIdx = llmResponse.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      const jsonCandidate = llmResponse.slice(startIdx, endIdx + 1);
+      try {
+        return JSON.parse(jsonCandidate);
+      } catch (innerError) {
+        throw new Error(`Failed to parse JSON substring: ${(innerError as Error).message}`);
+      }
+    }
+
+    throw new Error('No valid JSON could be extracted from the AI response.');
+  }
+}
+
 export async function handleTriage(request: Request, env: Env): Promise<Response> {
   // Validate Authorization header
   const authHeader = request.headers.get('x-axim-internal-key') || request.headers.get('Authorization');
@@ -69,15 +104,59 @@ export async function handleTriage(request: Request, env: Env): Promise<Response
 
     const record = records[0];
     const originalPayload = record.original_payload;
+    const errorReason = record.error_reason || 'Unknown error';
 
-    // 2. Generate a stubbed JSON patch response (Structural piping)
-    // We are NOT integrating DeepSeek/Anthropic yet. Just stubbing a patch.
-    const stubbedPatch = {
-      ...originalPayload,
-      __onyx_patched: true,
-      _triage_timestamp: new Date().toISOString(),
-      resolved_reason: "Stubbed AI Patch Applied"
-    };
+    // 2. Query the AXiM LLM Proxy
+    let proposedPatch;
+    try {
+      const proxyPayload = {
+        model: 'deepseek-coder',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an autonomous data recovery system. Analyze the provided original JSON payload and the error reason. Return ONLY the corrected JSON object that fixes the error. Do not include any explanations, markdown formatting, or preamble. Return raw valid JSON.'
+          },
+          {
+            role: 'user',
+            content: `Error Reason: ${errorReason}\n\nOriginal Payload: ${JSON.stringify(originalPayload)}`
+          }
+        ]
+      };
+
+      // Fallback proxy URL for development/production
+      const proxyUrl = 'https://api.axim.us.com/v1/proxy/llm';
+
+      const aiResponse = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${env.AXIM_INTERNAL_KEY}` // Using internal key for proxy auth
+        },
+        body: JSON.stringify(proxyPayload)
+      });
+
+      if (!aiResponse.ok) {
+         const aiErr = await aiResponse.text();
+         throw new Error(`AI Proxy responded with ${aiResponse.status}: ${aiErr}`);
+      }
+
+      const aiData = await aiResponse.json() as any;
+
+      // Extract the text response (assuming OpenAI-like standard response format)
+      const llmText = aiData.choices?.[0]?.message?.content || aiData.response || '';
+
+      proposedPatch = extractJsonFromMarkdown(llmText);
+
+    } catch (aiError) {
+      console.error("AI Patch Generation Failed:", aiError);
+      // Fallback for development if the proxy is unreachable
+      proposedPatch = {
+        ...originalPayload,
+        __onyx_patch_failed: true,
+        _triage_timestamp: new Date().toISOString(),
+        fallback_reason: `AI Proxy Failure: ${(aiError as Error).message}`
+      };
+    }
 
     // 3. Update the Supabase record to 'patched' status
     const updateUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(recordId)}`;
@@ -90,7 +169,7 @@ export async function handleTriage(request: Request, env: Env): Promise<Response
       },
       body: JSON.stringify({
         status: 'patched',
-        proposed_patch: stubbedPatch
+        proposed_patch: proposedPatch
       })
     });
 
@@ -103,7 +182,7 @@ export async function handleTriage(request: Request, env: Env): Promise<Response
     }
 
     // 4. Return the response
-    return new Response(JSON.stringify({ success: true, patched: true, patch: stubbedPatch }), {
+    return new Response(JSON.stringify({ success: true, patched: true, patch: proposedPatch }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request) },
     });
