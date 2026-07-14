@@ -81,12 +81,31 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
       const chunk = records.slice(i, i + chunkSize);
 
       const chunkPromises = chunk.map(async (record) => {
+        const updateStatus = async (status: string, errorReason: string | null = null) => {
+          const updateUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(record.id)}`;
+          const body: any = { status };
+          if (errorReason) {
+            body.error_reason = errorReason;
+          }
+          await fetch(updateUrl, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': env.SUPABASE_ANON_KEY || 'dummy',
+              'Authorization': `Bearer ${env.SUPABASE_ANON_KEY || 'dummy'}`,
+            },
+            body: JSON.stringify(body)
+          });
+        };
+
         try {
           const targetUrl = record.target_destination;
           const bodyPayload = record.original_payload;
 
           if (!targetUrl) {
-             return { id: record.id, success: false, error: 'No target_destination' };
+             const errorMsg = 'No target_destination';
+             await updateStatus('failed', errorMsg);
+             return { id: record.id, success: false, error: errorMsg };
           }
 
           // POST to target destination
@@ -99,29 +118,20 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
           });
 
           if (!postResponse.ok) {
-            return { id: record.id, success: false, error: `Destination returned ${postResponse.status}` };
+            const errorMsg = `Replay Failed: ${postResponse.status}`;
+            await updateStatus('failed', errorMsg);
+            return { id: record.id, success: false, error: errorMsg };
           }
 
           // 3. Update Supabase record status to resolved
-          const updateUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(record.id)}`;
-          const updateResponse = await fetch(updateUrl, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': env.SUPABASE_ANON_KEY || 'dummy',
-              'Authorization': `Bearer ${env.SUPABASE_ANON_KEY || 'dummy'}`,
-            },
-            body: JSON.stringify({ status: 'resolved' })
-          });
-
-          if (!updateResponse.ok) {
-            return { id: record.id, success: true, updatedStatus: false, error: 'Failed to update status in DB' };
-          }
+          await updateStatus('resolved', null);
 
           return { id: record.id, success: true, updatedStatus: true };
 
         } catch (err) {
-          return { id: record.id, success: false, error: (err as Error).message };
+          const errorMsg = `Replay Exception: ${(err as Error).message}`;
+          await updateStatus('failed', errorMsg);
+          return { id: record.id, success: false, error: errorMsg };
         }
       });
 
