@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 import '@questlabs/react-sdk/dist/style.css';
 import { useEchoData } from "./hooks/useEchoData";
 import { echoService } from "./services/echoService";
@@ -91,7 +94,7 @@ export default function App() {
           </>
         );
       case 'Edge Telemetry':
-        return <EdgeTelemetry />;
+        return <EdgeTelemetry records={records} />;
       case 'Onyx Proxies':
         return <OnyxProxies />;
       case 'System Config':
@@ -135,6 +138,7 @@ export default function App() {
         />
       </main>
 
+      <ToastContainer theme="dark" position="bottom-right" />
       {viewingRecord && (
         <OnyxPatchReview 
           record={viewingRecord} 

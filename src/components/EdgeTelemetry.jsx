@@ -2,15 +2,27 @@ import React from 'react';
 import ReactECharts from 'echarts-for-react';
 import { motion } from 'framer-motion';
 
-export default function EdgeTelemetry() {
+export default function EdgeTelemetry({ records = [] }) {
+
+  // Aggregate failures by source_node
+  const sourceNodeCounts = records.reduce((acc, record) => {
+    // Only count records that are in a failed or pending state, or just count all records assuming they represent failures.
+    // Assuming 'records' represents the DLQ (Dead Letter Queue) which implies failures.
+    const node = record.source_node || 'Unknown Node';
+    acc[node] = (acc[node] || 0) + 1;
+    return acc;
+  }, {});
+
+  const nodeNames = Object.keys(sourceNodeCounts);
+  const nodeData = Object.values(sourceNodeCounts);
+
   const option = {
     backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
     xAxis: {
       type: 'category',
-      boundaryGap: false,
-      data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'],
+      data: nodeNames,
       axisLabel: { color: '#64748b' }
     },
     yAxis: {
@@ -20,20 +32,14 @@ export default function EdgeTelemetry() {
     },
     series: [
       {
-        name: 'Asguard DLQ',
-        type: 'line',
-        smooth: true,
-        data: [120, 132, 101, 134, 90, 230, 210],
-        itemStyle: { color: '#22d3ee' },
-        areaStyle: { color: 'rgba(34, 211, 238, 0.1)' }
-      },
-      {
-        name: 'Green Machine',
-        type: 'line',
-        smooth: true,
-        data: [220, 182, 191, 234, 290, 330, 310],
-        itemStyle: { color: '#10b981' },
-        areaStyle: { color: 'rgba(16, 185, 129, 0.1)' }
+        name: 'Failures',
+        type: 'bar',
+        barWidth: '40%',
+        data: nodeData,
+        itemStyle: {
+          color: '#22d3ee',
+          borderRadius: [4, 4, 0, 0]
+        }
       }
     ]
   };
