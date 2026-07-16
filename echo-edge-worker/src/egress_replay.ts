@@ -118,7 +118,13 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
           });
 
           if (!postResponse.ok) {
-            const errorMsg = `Replay Failed: ${postResponse.status}`;
+            let responseText = '';
+            try {
+              responseText = await postResponse.text();
+            } catch (e) {
+              responseText = 'Could not read response text';
+            }
+            const errorMsg = `Replay Failed: ${postResponse.status} - ${responseText}`;
             await updateStatus('failed', errorMsg);
             return { id: record.id, success: false, error: errorMsg };
           }

@@ -91,12 +91,7 @@ export function useEchoData() {
     setReplayProgress(50);
 
     try {
-      if (import.meta.env.VITE_SUPABASE_URL) {
-        await supabase
-          .from(echoService.getTableName())
-          .update({ status: 'replaying' })
-          .in('id', selectedIds);
-      }
+      toast.info(`Initiating batch replay for ${selectedIds.length} records...`);
 
       const response = await echoService.triggerReplay(selectedIds);
 
