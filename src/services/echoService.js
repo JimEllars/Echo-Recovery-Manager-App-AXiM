@@ -64,6 +64,11 @@ export const echoService = {
         });
 
         if (!response.ok) {
+             if (response.status === 401) {
+                 console.error("Token expired or unauthorized. Signing out.");
+                 await supabase.auth.signOut();
+                 return { error: 'Unauthorized. Session expired.' };
+             }
              const errorText = await response.text();
              console.error("Worker replay failed", errorText);
              return { error: 'Failed to trigger replay in worker' };
@@ -110,6 +115,11 @@ export const echoService = {
         });
 
         if (!response.ok) {
+             if (response.status === 401) {
+                 console.error("Token expired or unauthorized. Signing out.");
+                 await supabase.auth.signOut();
+                 return { error: 'Unauthorized. Session expired.' };
+             }
              const errorText = await response.text();
              console.error("Worker triage failed", errorText);
              return { error: 'Failed to trigger triage in worker' };
