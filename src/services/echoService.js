@@ -45,12 +45,21 @@ export const echoService = {
     const apiUrl = `${workerUrl}/api/v1/replay`;
 
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
-            },
+            headers,
             body: JSON.stringify({ recordIds })
         });
 
@@ -82,12 +91,21 @@ export const echoService = {
     const apiUrl = `${workerUrl}/api/v1/triage`;
 
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         const response = await fetch(apiUrl, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
-            },
+            headers,
             body: JSON.stringify({ recordId })
         });
 

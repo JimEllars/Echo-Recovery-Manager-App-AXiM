@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import '@questlabs/react-sdk/dist/style.css';
 import { useEchoData } from "./hooks/useEchoData";
 import { echoService } from "./services/echoService";
+import { supabase } from './supabase/supabase';
 import Sidebar from './components/layout/Sidebar';
 import StatsOverview from './components/StatsOverview';
 import DlqAggregationFeed from './components/DlqAggregationFeed';
@@ -14,8 +15,46 @@ import EdgeTelemetry from './components/EdgeTelemetry';
 import OnyxProxies from './components/OnyxProxies';
 import SystemConfig from './components/SystemConfig';
 import DlqRecords from './components/DlqRecords';
+import Login from './components/auth/Login';
 
 export default function App() {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center justify-center text-slate-400">
+           <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+           <p>Verifying Access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
+
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const [activeTab, setActiveTab] = useState('Cockpit Overview');
   const [viewingRecord, setViewingRecord] = useState(null);
   
@@ -43,6 +82,10 @@ export default function App() {
 
     setViewingRecord(null);
     setSelectedIds(prev => !prev.includes(id) ? [...prev, id] : prev);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
   };
 
   const renderContent = () => {
@@ -121,6 +164,10 @@ export default function App() {
               <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
               <span>{isOnline ? 'Edge Workers: Active' : 'Edge Workers: Offline'}</span>
             </div>
+            <span className="w-px h-4 bg-slate-700"></span>
+            <button onClick={handleLogout} className="text-slate-400 hover:text-white transition-colors text-xs font-medium px-3 py-1.5 border border-slate-700 hover:border-slate-500 rounded-md">
+              Log Out
+            </button>
           </div>
         </header>
 
