@@ -1,7 +1,10 @@
+// @ts-ignore
+import jwt from '@tsndr/cloudflare-worker-jwt';
 export interface Env {
   AXIM_INTERNAL_KEY: string;
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
+  SUPABASE_JWT_SECRET: string;
 }
 
 const ALLOWED_ORIGINS = [
@@ -30,6 +33,25 @@ import { handleIngress } from './ingress';
 import { handleReplay } from './egress_replay';
 import { handleTriage } from './cognitive_triage';
 
+
+async function verifyJwt(request: Request, env: Env): Promise<boolean> {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return false;
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const secret = env.SUPABASE_JWT_SECRET;
+    if (!secret) return false;
+
+    // We only verify signature and expiration for simplicity.
+    const isValid = await jwt.verify(token, secret);
+    return isValid;
+  } catch (err) {
+    return false;
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -46,11 +68,25 @@ export default {
       return handleIngress(request, env);
     }
 
-    if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
+if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
+      const isValid = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
       return handleReplay(request, env);
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/triage') {
+      const isValid = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
       return handleTriage(request, env);
     }
 

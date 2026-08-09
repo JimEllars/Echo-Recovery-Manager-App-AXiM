@@ -15,6 +15,7 @@
   "dependencies": {
     "@questlabs/react-sdk": "^2.2.92",
     "@supabase/supabase-js": "^2.39.0",
+    "@tsndr/cloudflare-worker-jwt": "^3.2.2",
     "date-fns": "4.1.0",
     "diff-match-patch": "^1.0.5",
     "echarts": "^5.5.0",

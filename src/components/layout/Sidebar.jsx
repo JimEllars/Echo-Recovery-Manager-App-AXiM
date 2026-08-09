@@ -1,8 +1,10 @@
 import React from 'react';
+import { supabase } from '../../supabase/supabase';
+
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../common/SafeIcon';
 
-const { FiActivity, FiDatabase, FiShield, FiSettings, FiRadio } = FiIcons;
+const { FiActivity, FiDatabase, FiShield, FiSettings, FiRadio, FiLogOut } = FiIcons;
 
 const navItems = [
   { icon: FiActivity, label: 'Cockpit Overview' },
@@ -13,6 +15,11 @@ const navItems = [
 ];
 
 export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-screen shrink-0">
       <div className="p-6 flex items-center gap-3 border-b border-slate-800">
@@ -40,6 +47,15 @@ export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {
           </button>
         ))}
       </nav>
+      <div className="px-4 pb-4">
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 border border-transparent"
+        >
+          <SafeIcon icon={FiLogOut} className="text-slate-500" />
+          Sign Out
+        </button>
+      </div>
       <div className="p-4 border-t border-slate-800">
         <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
