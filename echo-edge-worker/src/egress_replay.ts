@@ -113,6 +113,7 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-AXiM-Recovery-Trace': `echo-${record.id}`
             },
             body: typeof bodyPayload === 'string' ? bodyPayload : JSON.stringify(bodyPayload)
           });
