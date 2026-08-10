@@ -3,7 +3,7 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import Badge from './ui/Badge';
 
-const { FiSearch, FiFilter, FiMoreHorizontal } = FiIcons;
+const { FiSearch, FiFilter, FiMoreHorizontal, FiLoader } = FiIcons;
 
 export default function DlqAggregationFeed({ records, selectedIds, onSelect, onRowClick }) {
   
@@ -65,8 +65,12 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
             {records.map((record) => (
               <tr 
                 key={record.id} 
-                onClick={() => onRowClick(record)}
-                className="hover:bg-slate-800/50 cursor-pointer transition-colors group"
+                onClick={() => {
+                  if (record.status !== 'replaying') {
+                    onRowClick(record);
+                  }
+                }}
+                className={`hover:bg-slate-800/50 cursor-pointer transition-colors group ${record.status === 'replaying' ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
                   <input 
@@ -74,7 +78,7 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
                     className="rounded border-slate-700 bg-slate-900 checked:bg-cyan-500"
                     checked={selectedIds.includes(record.id)}
                     onChange={(e) => toggleSelect(e, record.id)}
-                    disabled={record.status !== 'patched'}
+                    disabled={record.status !== 'patched' || record.status === 'replaying'}
                   />
                 </td>
                 <td className="p-4 font-mono text-slate-300">{record.id}</td>
@@ -84,9 +88,13 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
                   <Badge status={record.status} />
                 </td>
                 <td className="p-4 text-right text-slate-500">
-                  <button className="p-1 hover:text-slate-200 transition-colors">
-                    <SafeIcon icon={FiMoreHorizontal} />
-                  </button>
+                  {record.status === 'replaying' ? (
+                    <SafeIcon icon={FiLoader} className="animate-spin text-cyan-500 mx-auto" />
+                  ) : (
+                    <button className="p-1 hover:text-slate-200 transition-colors" disabled={record.status === 'replaying'}>
+                      <SafeIcon icon={FiMoreHorizontal} />
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

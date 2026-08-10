@@ -32,6 +32,16 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
             headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
           });
     }
+
+    const requiredKeys = ['source_node', 'target_destination', 'error_reason', 'payload'];
+    for (const key of requiredKeys) {
+      if (!(key in payload)) {
+        return new Response(JSON.stringify({ error: `Bad Request: Missing required key '${key}'` }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
+        });
+      }
+    }
   } catch (error) {
     return new Response(JSON.stringify({ error: 'Bad Request: Invalid JSON', details: (error as Error).message }), {
       status: 400,
