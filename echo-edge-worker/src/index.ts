@@ -32,6 +32,7 @@ export function getCorsHeaders(request: Request) {
 import { handleIngress } from './ingress';
 import { handleReplay } from './egress_replay';
 import { handleTriage } from './cognitive_triage';
+import { pruneRecords } from './prune_records';
 
 
 async function verifyJwt(request: Request, env: Env): Promise<boolean> {
@@ -95,4 +96,8 @@ if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });
   },
+
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
+    await pruneRecords(env);
+  }
 };
