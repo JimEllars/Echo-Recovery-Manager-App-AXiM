@@ -17,6 +17,7 @@ import SystemConfig from './components/SystemConfig';
 import DlqRecords from './components/DlqRecords';
 import Login from './components/auth/Login';
 
+import ErrorBoundary from './components/layout/ErrorBoundary';
 export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -173,7 +174,9 @@ function Dashboard() {
 
         <div className="flex-1 overflow-auto p-8 relative">
           <div className="max-w-7xl mx-auto">
-            {renderContent()}
+            <ErrorBoundary>
+              {renderContent()}
+            </ErrorBoundary>
           </div>
         </div>
 

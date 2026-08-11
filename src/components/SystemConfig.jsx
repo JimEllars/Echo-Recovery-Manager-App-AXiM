@@ -9,22 +9,22 @@ const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle, FiTrash2 } = FiIcons;
 
 export default function SystemConfig() {
   const [isPruning, setIsPruning] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const configs = [
     { label: 'AXIM_INTERNAL_KEY', value: '••••••••••••••••', lastRotated: '2 days ago', icon: FiKey },
     { label: 'EDGE_WORKER_URL', value: 'https://echo-edge.axim.workers.dev', lastRotated: 'Never', icon: FiGlobe },
     { label: 'AUTO_TRIAGE_THRESHOLD', value: '0.85 Confidence', lastRotated: '14 days ago', icon: FiRefreshCw },
   ];
 
-  const handleForcePrune = async () => {
-    if (clickCount === 0) {
-      setClickCount(1);
-      setTimeout(() => setClickCount(0), 3000); // Reset after 3 seconds
-      return;
-    }
 
+  const handleForcePruneClick = () => {
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmPrune = async () => {
+    setShowConfirmModal(false);
     setIsPruning(true);
-    setClickCount(0);
     try {
       const response = await echoService.forcePruneDatabase();
       if (response && response.success) {
@@ -38,6 +38,7 @@ export default function SystemConfig() {
       setIsPruning(false);
     }
   };
+
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -93,22 +94,59 @@ export default function SystemConfig() {
           <p className="text-xs text-red-400/70">Manually trigger a database prune operation immediately.</p>
         </div>
         <button
-          onClick={handleForcePrune}
+          onClick={handleForcePruneClick}
           disabled={isPruning}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-            clickCount === 1
-              ? 'bg-red-600 text-white border-red-500 animate-pulse'
+            isPruning
+              ? 'bg-transparent text-red-400 border-red-500/50 cursor-not-allowed'
               : 'bg-transparent text-red-400 hover:bg-red-500/20 border-red-500/50 hover:border-red-500'
           }`}
         >
           {isPruning ? (
-             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+             <div className="w-4 h-4 border-2 border-red-400/30 border-t-red-400 rounded-full animate-spin"></div>
           ) : (
             <SafeIcon icon={FiTrash2} />
           )}
-          {isPruning ? 'Pruning...' : clickCount === 1 ? 'Click again to confirm' : 'Force Database Prune'}
+          {isPruning ? 'Pruning...' : 'Force Database Prune'}
         </button>
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-slate-900 border border-slate-800 rounded-xl p-6 max-w-md w-full shadow-2xl"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center">
+                <SafeIcon icon={FiAlertTriangle} className="text-red-400 text-xl" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-100">Confirm Database Prune</h3>
+            </div>
+
+            <p className="text-slate-400 text-sm mb-6">
+              You are about to force a manual pruning of the database. This action will permanently remove all resolved DLQ records older than 7 days immediately. This action cannot be undone. Are you sure you want to proceed?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors border border-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPrune}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-500 transition-colors border border-red-500 flex items-center gap-2"
+              >
+                <SafeIcon icon={FiTrash2} />
+                Confirm Prune
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
 
     </motion.div>
   );
