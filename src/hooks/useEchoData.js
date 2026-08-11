@@ -60,6 +60,7 @@ export function useEchoData() {
             } else if (payload.eventType === 'UPDATE') {
                setRecords((prev) => prev.map(rec => rec.id === payload.new.id ? payload.new : rec));
             } else if (payload.eventType === 'DELETE') {
+               // Ensure the DOM updates instantly without a browser refresh
                setRecords((prev) => prev.filter(rec => rec.id !== payload.old.id));
             }
           }

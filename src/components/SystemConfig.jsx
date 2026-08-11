@@ -1,16 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { echoService } from '../services/echoService';
+import { toast } from 'react-toastify';
 
-const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle } = FiIcons;
+const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle, FiTrash2 } = FiIcons;
 
 export default function SystemConfig() {
+  const [isPruning, setIsPruning] = useState(false);
+  const [clickCount, setClickCount] = useState(0);
   const configs = [
     { label: 'AXIM_INTERNAL_KEY', value: '••••••••••••••••', lastRotated: '2 days ago', icon: FiKey },
     { label: 'EDGE_WORKER_URL', value: 'https://echo-edge.axim.workers.dev', lastRotated: 'Never', icon: FiGlobe },
     { label: 'AUTO_TRIAGE_THRESHOLD', value: '0.85 Confidence', lastRotated: '14 days ago', icon: FiRefreshCw },
   ];
+
+  const handleForcePrune = async () => {
+    if (clickCount === 0) {
+      setClickCount(1);
+      setTimeout(() => setClickCount(0), 3000); // Reset after 3 seconds
+      return;
+    }
+
+    setIsPruning(true);
+    setClickCount(0);
+    try {
+      const response = await echoService.forcePruneDatabase();
+      if (response && response.success) {
+        toast.success(`Manual Prune Executed: ${response.count} records cleared`);
+      } else {
+        toast.error(`Force prune failed: ${response?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error(`Force prune failed: ${err.message}`);
+    } finally {
+      setIsPruning(false);
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -59,6 +86,30 @@ export default function SystemConfig() {
           ))}
         </div>
       </div>
+
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 flex items-center justify-between mt-8">
+        <div>
+          <h3 className="text-sm font-semibold text-red-400 mb-1 uppercase tracking-wider">Emergency Protocol</h3>
+          <p className="text-xs text-red-400/70">Manually trigger a database prune operation immediately.</p>
+        </div>
+        <button
+          onClick={handleForcePrune}
+          disabled={isPruning}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+            clickCount === 1
+              ? 'bg-red-600 text-white border-red-500 animate-pulse'
+              : 'bg-transparent text-red-400 hover:bg-red-500/20 border-red-500/50 hover:border-red-500'
+          }`}
+        >
+          {isPruning ? (
+             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          ) : (
+            <SafeIcon icon={FiTrash2} />
+          )}
+          {isPruning ? 'Pruning...' : clickCount === 1 ? 'Click again to confirm' : 'Force Database Prune'}
+        </button>
+      </div>
+
     </motion.div>
   );
 }

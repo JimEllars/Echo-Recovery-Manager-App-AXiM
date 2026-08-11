@@ -1,6 +1,6 @@
 import { Env } from './index';
 
-export async function pruneRecords(env: Env): Promise<void> {
+export async function pruneRecords(env: Env): Promise<{ success: boolean; count?: number; error?: string }> {
   // Calculate timestamp for 7 days ago
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -12,6 +12,28 @@ export async function pruneRecords(env: Env): Promise<void> {
   });
 
   const url = `${env.SUPABASE_URL}/rest/v1/echo_dlq_records?${queryParams.toString()}`;
+
+  const updateKV = async (newLog: any) => {
+    let logs = [];
+    try {
+      const existingLogsStr = await env.ECHO_STATE_KV.get('last_prune_run');
+      if (existingLogsStr) {
+        const existingLogs = JSON.parse(existingLogsStr);
+        if (Array.isArray(existingLogs)) {
+          logs = existingLogs;
+        } else {
+          logs = [existingLogs];
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse existing logs", e);
+    }
+
+    logs.unshift(newLog);
+    logs = logs.slice(0, 5);
+
+    await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify(logs));
+  };
 
   try {
     const response = await fetch(url, {
@@ -28,31 +50,37 @@ export async function pruneRecords(env: Env): Promise<void> {
       const errorText = await response.text();
       console.error(`Failed to prune records: ${response.status} - ${errorText}`);
 
-      await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+      await updateKV({
         timestamp: new Date().toISOString(),
         records_purged: 0,
         status: 'error',
         error: errorText
-      }));
+      });
 
-      return;
+      return { success: false, error: errorText };
     }
 
     const deletedRecords = await response.json() as any[];
     console.log(`Successfully pruned ${deletedRecords.length} resolved records older than 7 days.`);
 
-    await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+    await updateKV({
       timestamp: new Date().toISOString(),
       records_purged: deletedRecords.length,
       status: 'success'
-    }));
+    });
+
+    return { success: true, count: deletedRecords.length };
   } catch (error) {
     console.error('Error executing prune records logic:', error);
-    await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    await updateKV({
       timestamp: new Date().toISOString(),
       records_purged: 0,
       status: 'error',
-      error: error instanceof Error ? error.message : String(error)
-    }));
+      error: errorMsg
+    });
+
+    return { success: false, error: errorMsg };
   }
 }
