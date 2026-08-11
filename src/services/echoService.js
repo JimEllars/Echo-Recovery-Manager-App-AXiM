@@ -133,7 +133,56 @@ export const echoService = {
         return { error: 'Failed to trigger triage request' };
     }
   },
+
+  async fetchSystemStatus() {
+    const workerUrl = import.meta.env.VITE_WORKER_URL;
+    if (!workerUrl) {
+      console.warn("VITE_WORKER_URL is not set.");
+      return { error: 'Worker URL not configured' };
+    }
+
+    const apiUrl = `${workerUrl}/api/v1/system-status`;
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers
+        });
+
+        if (!response.ok) {
+             if (response.status === 401) {
+                 console.error("Token expired or unauthorized. Signing out.");
+                 await supabase.auth.signOut();
+                 return { error: 'Unauthorized. Session expired.' };
+             }
+             const errorText = await response.text();
+             console.error("Worker system-status fetch failed", errorText);
+             return { error: 'Failed to fetch system status from worker' };
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch(err) {
+        console.error("Worker system-status request failed:", err);
+        return { error: 'Failed to fetch system status' };
+    }
+  },
+
   getTableName() {
+
     return TABLE_NAME;
   }
 };

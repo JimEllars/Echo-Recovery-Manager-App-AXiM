@@ -5,6 +5,7 @@ export interface Env {
   SUPABASE_URL: string;
   SUPABASE_ANON_KEY: string;
   SUPABASE_JWT_SECRET: string;
+  ECHO_STATE_KV: KVNamespace;
 }
 
 const ALLOWED_ORIGINS = [
@@ -24,7 +25,7 @@ export function getCorsHeaders(request: Request) {
 
   return {
     'Access-Control-Allow-Origin': isAllowedOrigin ? origin : ALLOWED_ORIGINS[0],
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-axim-internal-key',
   };
 }
@@ -89,6 +90,32 @@ if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
         });
       }
       return handleTriage(request, env);
+    }
+
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/system-status') {
+      const isValid = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      try {
+        const lastPruneRunStr = await env.ECHO_STATE_KV.get('last_prune_run');
+        const lastPruneRun = lastPruneRunStr ? JSON.parse(lastPruneRunStr) : null;
+
+        return new Response(JSON.stringify({ last_prune_run: lastPruneRun }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ error: 'Not Found' }), {

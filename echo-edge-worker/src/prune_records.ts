@@ -27,12 +27,32 @@ export async function pruneRecords(env: Env): Promise<void> {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`Failed to prune records: ${response.status} - ${errorText}`);
+
+      await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+        timestamp: new Date().toISOString(),
+        records_purged: 0,
+        status: 'error',
+        error: errorText
+      }));
+
       return;
     }
 
     const deletedRecords = await response.json() as any[];
     console.log(`Successfully pruned ${deletedRecords.length} resolved records older than 7 days.`);
+
+    await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      records_purged: deletedRecords.length,
+      status: 'success'
+    }));
   } catch (error) {
     console.error('Error executing prune records logic:', error);
+    await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify({
+      timestamp: new Date().toISOString(),
+      records_purged: 0,
+      status: 'error',
+      error: error instanceof Error ? error.message : String(error)
+    }));
   }
 }
