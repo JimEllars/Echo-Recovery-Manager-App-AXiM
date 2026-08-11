@@ -9,3 +9,7 @@ SUPABASE_ANON_KEY = "your-supabase-anon-key"
 
 [triggers]
 crons = ["0 0 * * *"]
+
+[[kv_namespaces]]
+binding = "ECHO_STATE_KV"
+id = "ECHO_STATE_KV_ID"
