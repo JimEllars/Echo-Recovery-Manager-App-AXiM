@@ -70,7 +70,7 @@ export default {
       return handleIngress(request, env);
     }
 
-if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
+    if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
       const isValid = await verifyJwt(request, env);
       if (!isValid) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -92,6 +92,20 @@ if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
       return handleTriage(request, env);
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/v1/force-prune') {
+      const isValid = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+      const result = await pruneRecords(env);
+      return new Response(JSON.stringify(result), {
+        status: result.success ? 200 : 500,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/system-status') {
       const isValid = await verifyJwt(request, env);

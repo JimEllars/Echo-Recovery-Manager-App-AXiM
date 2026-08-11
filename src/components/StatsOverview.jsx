@@ -13,7 +13,16 @@ export default function StatsOverview({ records }) {
     const fetchStatus = async () => {
       const result = await echoService.fetchSystemStatus();
       if (result && !result.error && result.last_prune_run) {
-        setSystemStatus(result.last_prune_run);
+        // Handle array of logs by taking the first (most recent) item
+        const latestStatus = Array.isArray(result.last_prune_run)
+          ? result.last_prune_run[0]
+          : result.last_prune_run;
+
+        if (latestStatus) {
+          setSystemStatus(latestStatus);
+        } else {
+          setSystemStatus({ timestamp: null, records_purged: 0, status: 'awaiting' });
+        }
       } else {
         setSystemStatus({ timestamp: null, records_purged: 0, status: 'awaiting' });
       }
