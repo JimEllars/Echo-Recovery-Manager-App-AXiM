@@ -4,7 +4,7 @@ import { supabase } from '../../supabase/supabase';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../../common/SafeIcon';
 
-const { FiActivity, FiDatabase, FiShield, FiSettings, FiRadio, FiLogOut } = FiIcons;
+const { FiActivity, FiDatabase, FiShield, FiSettings, FiRadio, FiLogOut, FiFileText } = FiIcons;
 
 const navItems = [
   { icon: FiActivity, label: 'Cockpit Overview' },
@@ -12,6 +12,7 @@ const navItems = [
   { icon: FiShield, label: 'Onyx Proxies' },
   { icon: FiDatabase, label: 'DLQ Records' },
   { icon: FiSettings, label: 'System Config' },
+  { icon: FiFileText, label: 'Audit Logs' },
 ];
 
 export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {

@@ -14,6 +14,7 @@ import ReplayOrchestrator from './components/ReplayOrchestrator';
 import EdgeTelemetry from './components/EdgeTelemetry';
 import OnyxProxies from './components/OnyxProxies';
 import SystemConfig from './components/SystemConfig';
+import AuditLogFeed from './components/AuditLogFeed';
 import DlqRecords from './components/DlqRecords';
 import Login from './components/auth/Login';
 
@@ -143,6 +144,8 @@ function Dashboard() {
         return <OnyxProxies />;
       case 'System Config':
         return <SystemConfig />;
+      case 'Audit Logs':
+        return <AuditLogFeed />;
       default:
         return null;
     }
