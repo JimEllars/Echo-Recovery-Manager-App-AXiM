@@ -2,7 +2,7 @@ import { Env, getCorsHeaders } from './index';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
-export async function handleReplay(request: Request, env: Env): Promise<Response> {
+export async function handleReplay(request: Request, env: Env, operator_id: string): Promise<Response> {
   // Validate Authorization header
   const authHeader = request.headers.get('x-axim-internal-key') || request.headers.get('Authorization');
 
@@ -146,7 +146,37 @@ export async function handleReplay(request: Request, env: Env): Promise<Response
       results.push(...chunkResults);
     }
 
+
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+
+    // Write audit log to KV
+    let recentLogs = [];
+    try {
+      const logsStr = await env.ECHO_STATE_KV.get('recent_audit_logs');
+      if (logsStr) {
+        recentLogs = JSON.parse(logsStr);
+        if (!Array.isArray(recentLogs)) recentLogs = [];
+      }
+    } catch (e) {
+      console.error('Failed to parse recent audit logs', e);
+    }
+
+    const newLog = {
+      timestamp: new Date().toISOString(),
+      action: 'BATCH_REPLAY',
+      triggered_by: operator_id,
+      success_count: successCount,
+      fail_count: failCount
+    };
+
+    recentLogs.unshift(newLog);
+    recentLogs = recentLogs.slice(0, 20);
+
+    await env.ECHO_STATE_KV.put('recent_audit_logs', JSON.stringify(recentLogs));
+
     return new Response(JSON.stringify({ success: true, results }), {
+
       status: 200,
       headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
     });

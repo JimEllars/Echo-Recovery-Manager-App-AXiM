@@ -13,7 +13,9 @@ export async function pruneRecords(env: Env, operator_id: string = 'system_cron'
 
   const url = `${env.SUPABASE_URL}/rest/v1/echo_dlq_records?${queryParams.toString()}`;
 
+
   const updateKV = async (newLog: any) => {
+    // 1. Update last_prune_run
     let logs = [];
     try {
       const existingLogsStr = await env.ECHO_STATE_KV.get('last_prune_run');
@@ -31,9 +33,33 @@ export async function pruneRecords(env: Env, operator_id: string = 'system_cron'
 
     logs.unshift(newLog);
     logs = logs.slice(0, 5);
-
     await env.ECHO_STATE_KV.put('last_prune_run', JSON.stringify(logs));
+
+    // 2. Update recent_audit_logs
+    let auditLogs = [];
+    try {
+      const auditLogsStr = await env.ECHO_STATE_KV.get('recent_audit_logs');
+      if (auditLogsStr) {
+        auditLogs = JSON.parse(auditLogsStr);
+        if (!Array.isArray(auditLogs)) auditLogs = [];
+      }
+    } catch (e) {
+      console.error("Failed to parse recent audit logs", e);
+    }
+
+    const auditLog = {
+      timestamp: newLog.timestamp,
+      action: 'DATABASE_PRUNE',
+      triggered_by: newLog.triggered_by,
+      success_count: newLog.records_purged,
+      fail_count: newLog.status === 'error' ? 1 : 0
+    };
+
+    auditLogs.unshift(auditLog);
+    auditLogs = auditLogs.slice(0, 20);
+    await env.ECHO_STATE_KV.put('recent_audit_logs', JSON.stringify(auditLogs));
   };
+
 
   try {
     const response = await fetch(url, {

@@ -83,7 +83,8 @@ export default {
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
       }
-      return handleReplay(request, env);
+      const operator_id = payload?.email || payload?.sub || "unknown";
+      return handleReplay(request, env, operator_id);
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/triage') {
@@ -111,6 +112,31 @@ export default {
         status: result.success ? 200 : 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       });
+    }
+
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/audit-logs') {
+      const { isValid, payload } = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      try {
+        const logsStr = await env.ECHO_STATE_KV.get('recent_audit_logs');
+        const logs = logsStr ? JSON.parse(logsStr) : [];
+        return new Response(JSON.stringify(logs), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/system-status') {
