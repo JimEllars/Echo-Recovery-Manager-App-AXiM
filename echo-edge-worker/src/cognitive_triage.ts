@@ -37,7 +37,7 @@ function extractJsonFromMarkdown(llmResponse: string): any {
   }
 }
 
-export async function handleTriage(request: Request, env: Env): Promise<Response> {
+export async function handleTriage(request: Request, env: Env, operator_id: string): Promise<Response> {
   // Validate Authorization header
   const authHeader = request.headers.get('x-axim-internal-key') || request.headers.get('Authorization');
 
@@ -180,6 +180,39 @@ export async function handleTriage(request: Request, env: Env): Promise<Response
         headers: { 'Content-Type': 'application/json', ...getCorsHeaders(request) },
       });
     }
+
+    // Write to audit log
+
+    try {
+
+      const logsStr = await env.ECHO_STATE_KV.get('recent_audit_logs');
+
+      const logs = logsStr ? JSON.parse(logsStr) : [];
+
+      const newLog = {
+
+        timestamp: new Date().toISOString(),
+
+        action: 'COGNITIVE_TRIAGE',
+
+        triggered_by: operator_id,
+
+        target_record: recordId
+
+      };
+
+      logs.unshift(newLog);
+
+      const slicedLogs = logs.slice(0, 20);
+
+      await env.ECHO_STATE_KV.put('recent_audit_logs', JSON.stringify(slicedLogs));
+
+    } catch (logErr) {
+
+      console.error("Failed to write to audit log:", logErr);
+
+    }
+
 
     // 4. Return the response
     return new Response(JSON.stringify({ success: true, patched: true, patch: proposedPatch }), {

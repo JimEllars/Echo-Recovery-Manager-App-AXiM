@@ -95,7 +95,8 @@ export default {
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
       }
-      return handleTriage(request, env);
+      const operator_id = payload?.email || payload?.sub || 'unknown';
+      return handleTriage(request, env, operator_id);
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/force-prune') {
