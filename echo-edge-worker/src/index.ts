@@ -36,21 +36,26 @@ import { handleTriage } from './cognitive_triage';
 import { pruneRecords } from './prune_records';
 
 
-async function verifyJwt(request: Request, env: Env): Promise<boolean> {
+async function verifyJwt(request: Request, env: Env): Promise<{ isValid: boolean, payload: any }> {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return false;
+    return { isValid: false, payload: null };
   }
   const token = authHeader.split(' ')[1];
   try {
     const secret = env.SUPABASE_JWT_SECRET;
-    if (!secret) return false;
+    if (!secret) return { isValid: false, payload: null };
 
     // We only verify signature and expiration for simplicity.
     const isValid = await jwt.verify(token, secret);
-    return isValid;
+    let payload = null;
+    if (isValid) {
+      const decoded = jwt.decode(token);
+      payload = decoded.payload;
+    }
+    return { isValid, payload };
   } catch (err) {
-    return false;
+    return { isValid: false, payload: null };
   }
 }
 
@@ -71,7 +76,7 @@ export default {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
-      const isValid = await verifyJwt(request, env);
+      const { isValid, payload } = await verifyJwt(request, env);
       if (!isValid) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
@@ -82,7 +87,7 @@ export default {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/triage') {
-      const isValid = await verifyJwt(request, env);
+      const { isValid, payload } = await verifyJwt(request, env);
       if (!isValid) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
@@ -93,14 +98,15 @@ export default {
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/force-prune') {
-      const isValid = await verifyJwt(request, env);
+      const { isValid, payload } = await verifyJwt(request, env);
       if (!isValid) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: { 'Content-Type': 'application/json', ...corsHeaders },
         });
       }
-      const result = await pruneRecords(env);
+      const operator_id = payload?.email || payload?.sub || 'unknown';
+      const result = await pruneRecords(env, operator_id);
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -108,7 +114,7 @@ export default {
     }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/system-status') {
-      const isValid = await verifyJwt(request, env);
+      const { isValid, payload } = await verifyJwt(request, env);
       if (!isValid) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
@@ -139,6 +145,6 @@ export default {
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    await pruneRecords(env);
+    await pruneRecords(env, 'system_cron');
   }
 };

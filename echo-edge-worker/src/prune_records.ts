@@ -1,6 +1,6 @@
 import { Env } from './index';
 
-export async function pruneRecords(env: Env): Promise<{ success: boolean; count?: number; error?: string }> {
+export async function pruneRecords(env: Env, operator_id: string = 'system_cron'): Promise<{ success: boolean; count?: number; error?: string }> {
   // Calculate timestamp for 7 days ago
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -51,7 +51,8 @@ export async function pruneRecords(env: Env): Promise<{ success: boolean; count?
       console.error(`Failed to prune records: ${response.status} - ${errorText}`);
 
       await updateKV({
-        timestamp: new Date().toISOString(),
+      triggered_by: operator_id,
+      timestamp: new Date().toISOString(),
         records_purged: 0,
         status: 'error',
         error: errorText
@@ -64,6 +65,7 @@ export async function pruneRecords(env: Env): Promise<{ success: boolean; count?
     console.log(`Successfully pruned ${deletedRecords.length} resolved records older than 7 days.`);
 
     await updateKV({
+      triggered_by: operator_id,
       timestamp: new Date().toISOString(),
       records_purged: deletedRecords.length,
       status: 'success'
@@ -75,6 +77,7 @@ export async function pruneRecords(env: Env): Promise<{ success: boolean; count?
 
     const errorMsg = error instanceof Error ? error.message : String(error);
     await updateKV({
+      triggered_by: operator_id,
       timestamp: new Date().toISOString(),
       records_purged: 0,
       status: 'error',
