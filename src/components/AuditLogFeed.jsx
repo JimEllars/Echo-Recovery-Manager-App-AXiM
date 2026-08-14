@@ -4,11 +4,12 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import { echoService } from '../services/echoService';
 
-const { FiCpu, FiUser, FiServer, FiLoader, FiCheckCircle, FiXCircle } = FiIcons;
+const { FiCpu, FiUser, FiServer, FiLoader, FiCheckCircle, FiXCircle, FiRefreshCw, FiZap } = FiIcons;
 
 export default function AuditLogFeed() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
@@ -26,12 +27,27 @@ export default function AuditLogFeed() {
     loadLogs();
   }, []);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    const res = await echoService.fetchAuditLogs();
+    if (!res.error) {
+      setLogs(res.data || []);
+    }
+    setRefreshing(false);
+  };
+
+  const formatDate = (dateString) => {
+    return new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date(dateString));
+  };
+
   const getActionIcon = (action) => {
     switch (action) {
       case 'BATCH_REPLAY':
         return FiServer;
       case 'DATABASE_PRUNE':
         return FiCpu;
+      case 'COGNITIVE_TRIAGE':
+        return FiZap;
       default:
         return FiServer;
     }
@@ -50,14 +66,22 @@ export default function AuditLogFeed() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col space-y-6">
       <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col flex-1">
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 flex-wrap gap-4">
           <h2 className="text-base font-semibold text-slate-200">Decentralized Audit Log</h2>
           <div className="flex gap-2 items-center text-xs text-slate-500">
              <span>Live Edge Telemetry</span>
+             <button
+               onClick={handleRefresh}
+               disabled={refreshing || loading}
+               className="ml-2 px-3 py-1.5 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors border border-slate-700 disabled:opacity-50"
+             >
+               <SafeIcon icon={FiRefreshCw} className={refreshing ? "animate-spin" : ""} />
+               Refresh Logs
+             </button>
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-x-auto p-4">
           {loading ? (
              <div className="flex flex-col items-center justify-center h-full text-slate-400">
                <SafeIcon icon={FiLoader} className="animate-spin text-2xl mb-4 text-cyan-500" />
@@ -72,7 +96,7 @@ export default function AuditLogFeed() {
                <p>No audit events recorded yet.</p>
              </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 min-w-[600px]">
               {logs.map((log, i) => (
                 <div key={i} className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex items-center gap-6">
                   <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
@@ -84,7 +108,10 @@ export default function AuditLogFeed() {
                        <span className="text-sm font-semibold text-slate-200 tracking-wide">{log.action.replace('_', ' ')}</span>
                        {getOperatorBadge(log.triggered_by)}
                     </div>
-                    <span className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleString()}</span>
+                    <span className="text-xs text-slate-500">{log.timestamp ? formatDate(log.timestamp) : 'Unknown Date'}</span>
+                    {log.target_record && (
+                      <span className="ml-3 text-[11px] text-slate-600 font-mono bg-slate-900 px-2 py-0.5 rounded">Target: {log.target_record}</span>
+                    )}
                   </div>
 
                   <div className="flex gap-4">
