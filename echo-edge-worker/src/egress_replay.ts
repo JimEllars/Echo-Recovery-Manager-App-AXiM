@@ -2,6 +2,8 @@ import { Env, getCorsHeaders } from './index';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+
 export async function handleReplay(request: Request, env: Env, operator_id: string): Promise<Response> {
   // Validate Authorization header
   const authHeader = request.headers.get('x-axim-internal-key') || request.headers.get('Authorization');
@@ -78,6 +80,10 @@ export async function handleReplay(request: Request, env: Env, operator_id: stri
 
     // 2. Concurrency Queue - Chunks of 5
     for (let i = 0; i < records.length; i += chunkSize) {
+      if (i > 0) {
+        await delay(500);
+      }
+
       const chunk = records.slice(i, i + chunkSize);
 
       const chunkPromises = chunk.map(async (record) => {

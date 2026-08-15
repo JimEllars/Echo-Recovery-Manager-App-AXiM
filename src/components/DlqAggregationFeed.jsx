@@ -3,9 +3,9 @@ import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import Badge from './ui/Badge';
 
-const { FiSearch, FiFilter, FiMoreHorizontal, FiLoader } = FiIcons;
+const { FiSearch, FiFilter, FiMoreHorizontal, FiLoader, FiPauseCircle, FiPlayCircle } = FiIcons;
 
-export default function DlqAggregationFeed({ records, selectedIds, onSelect, onRowClick }) {
+export default function DlqAggregationFeed({ records, selectedIds, onSelect, onRowClick, isFeedPaused, setIsFeedPaused, queuedRecords = [] }) {
   
   const handleSelectAll = (e) => {
     if (e.target.checked) {
@@ -26,7 +26,21 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[600px]">
       <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
-        <h2 className="text-base font-semibold text-slate-200">Unified Error Aggregation</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-base font-semibold text-slate-200">Unified Error Aggregation</h2>
+          <button
+            onClick={() => setIsFeedPaused && setIsFeedPaused(!isFeedPaused)}
+            className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${isFeedPaused ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'}`}
+          >
+            <SafeIcon icon={isFeedPaused ? FiPlayCircle : FiPauseCircle} />
+            {isFeedPaused ? 'Resume Feed' : 'Pause Feed'}
+          </button>
+          {isFeedPaused && queuedRecords && queuedRecords.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              {queuedRecords.length} new records awaiting...
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           <div className="relative">
             <SafeIcon icon={FiSearch} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
