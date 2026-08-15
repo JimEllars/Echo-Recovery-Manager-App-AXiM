@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { echoService } from '../services/echoService';
 import { supabase } from '../supabase/supabase';
 import { toast } from 'react-toastify';
@@ -12,6 +12,11 @@ export function useEchoData() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isOnline, setIsOnline] = useState(true);
+
+  const [isFeedPaused, setIsFeedPaused] = useState(false);
+  const [queuedRecords, setQueuedRecords] = useState([]);
+  const isFeedPausedRef = useRef(isFeedPaused);
+  isFeedPausedRef.current = isFeedPaused;
 
   useEffect(() => {
     let channel;
@@ -56,7 +61,11 @@ export function useEchoData() {
             console.log('Real-time update received:', payload);
 
             if (payload.eventType === 'INSERT') {
-              setRecords((prev) => [payload.new, ...prev]);
+              if (isFeedPausedRef.current) {
+                setQueuedRecords((prev) => [payload.new, ...prev]);
+              } else {
+                setRecords((prev) => [payload.new, ...prev]);
+              }
             } else if (payload.eventType === 'UPDATE') {
                setRecords((prev) => prev.map(rec => rec.id === payload.new.id ? payload.new : rec));
             } else if (payload.eventType === 'DELETE') {
@@ -85,6 +94,13 @@ export function useEchoData() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!isFeedPaused && queuedRecords.length > 0) {
+      setRecords((prev) => [...queuedRecords, ...prev]);
+      setQueuedRecords([]);
+    }
+  }, [isFeedPaused, queuedRecords]);
 
   const handleReplay = useCallback(async () => {
     if (selectedIds.length === 0) return;
@@ -132,6 +148,9 @@ export function useEchoData() {
     setRecords,
     isLoading,
     error,
-    isOnline
+    isOnline,
+    isFeedPaused,
+    setIsFeedPaused,
+    queuedRecords
   };
 }

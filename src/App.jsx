@@ -69,7 +69,10 @@ function Dashboard() {
     handleReplay,
     isLoading,
     isOnline,
-    error
+    error,
+    isFeedPaused,
+    setIsFeedPaused,
+    queuedRecords
   } = useEchoData();
 
   const handleApprovePatch = async (id) => {
@@ -118,6 +121,9 @@ function Dashboard() {
               selectedIds={selectedIds}
               onSelect={setSelectedIds}
               onRowClick={setViewingRecord}
+              isFeedPaused={isFeedPaused}
+              setIsFeedPaused={setIsFeedPaused}
+              queuedRecords={queuedRecords}
             />
           </>
         );

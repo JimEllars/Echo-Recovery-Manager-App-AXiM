@@ -1,5 +1,6 @@
 // This service abstracts the interaction with Supabase and the Edge Workers
 import { supabase } from '../supabase/supabase';
+import { toast } from 'react-toastify';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
@@ -39,6 +40,7 @@ export const echoService = {
     const workerUrl = import.meta.env.VITE_WORKER_URL;
     if (!workerUrl) {
       console.warn("VITE_WORKER_URL is not set. Simulating replay locally.");
+      toast.warn("VITE_WORKER_URL is not set. Simulating replay locally.");
       return new Promise((resolve) => setTimeout(resolve, 1000));
     }
 
@@ -67,10 +69,12 @@ export const echoService = {
              if (response.status === 401) {
                  console.error("Token expired or unauthorized. Signing out.");
                  await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
                  return { error: 'Unauthorized. Session expired.' };
              }
              const errorText = await response.text();
              console.error("Worker replay failed", errorText);
+             toast.error(`Replay Failed: ${response.status} - Edge Node Unreachable. Please try again.`);
              return { error: 'Failed to trigger replay in worker' };
         }
 
@@ -79,6 +83,7 @@ export const echoService = {
 
     } catch(err) {
         console.error("Worker replay request failed:", err);
+        toast.error(`Network Error: ${err.message || 'Edge Node Unreachable. Please try again.'}`);
         return { error: 'Failed to trigger replay request' };
     }
   },
@@ -118,10 +123,12 @@ export const echoService = {
              if (response.status === 401) {
                  console.error("Token expired or unauthorized. Signing out.");
                  await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
                  return { error: 'Unauthorized. Session expired.' };
              }
              const errorText = await response.text();
              console.error("Worker triage failed", errorText);
+             toast.error(`Triage Failed: ${response.status} - Edge Node Unreachable. Please try again.`);
              return { error: 'Failed to trigger triage in worker' };
         }
 
@@ -165,6 +172,7 @@ export const echoService = {
              if (response.status === 401) {
                  console.error("Token expired or unauthorized. Signing out.");
                  await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
                  return { error: 'Unauthorized. Session expired.' };
              }
              const errorText = await response.text();
@@ -212,6 +220,7 @@ export const echoService = {
              if (response.status === 401) {
                  console.error("Token expired or unauthorized. Signing out.");
                  await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
                  return { error: 'Unauthorized. Session expired.' };
              }
              const errorText = await response.text();
@@ -260,6 +269,7 @@ export const echoService = {
              if (response.status === 401) {
                  console.error("Token expired or unauthorized. Signing out.");
                  await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
                  return { error: 'Unauthorized. Session expired.' };
              }
              const errorText = await response.text();
