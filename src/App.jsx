@@ -27,10 +27,33 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setAuthLoading(false);
-    });
+
+    // Intercept SSO token if present
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+
+    if (token) {
+      // In a real scenario, this might be a custom token exchange or setting session
+      // Assuming 'token' is a valid Supabase JWT or access token.
+      supabase.auth.setSession({
+        access_token: token,
+        refresh_token: token,
+      }).then(({ data, error }) => {
+        if (!error && data.session) {
+          setSession(data.session);
+        }
+        // Cleanly strip token from URL
+        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({ path: newUrl }, '', newUrl);
+        setAuthLoading(false);
+      });
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setAuthLoading(false);
+      });
+    }
+
 
     const {
       data: { subscription },

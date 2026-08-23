@@ -6,6 +6,7 @@ export interface Env {
   SUPABASE_ANON_KEY: string;
   SUPABASE_JWT_SECRET: string;
   ECHO_STATE_KV: KVNamespace;
+  DLQ_TABLE_NAME: string;
   AXIM_ALERT_WEBHOOK_URL?: string;
 }
 

@@ -62,7 +62,7 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
     };
 
     // Insert into Supabase via REST API
-    const supabaseRestUrl = `${env.SUPABASE_URL}/rest/v1/echo_dlq_records_1783829654384`;
+    const supabaseRestUrl = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}`;
 
     const response = await fetch(supabaseRestUrl, {
       method: 'POST',
