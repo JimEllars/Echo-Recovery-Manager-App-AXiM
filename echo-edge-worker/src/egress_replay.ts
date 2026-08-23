@@ -44,6 +44,13 @@ export async function handleReplay(request: Request, env: Env, operator_id: stri
     });
   }
 
+  if (recordIds.length > 50) {
+    return new Response(JSON.stringify({ error: 'Batch limit exceeded. Please send a maximum of 50 records per request to prevent execution timeouts.' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
+    });
+  }
+
   try {
     // 1. Fetch records from Supabase
     // Depending on Supabase setup, if ID is UUID it shouldn't need quotes in `in.()`,
