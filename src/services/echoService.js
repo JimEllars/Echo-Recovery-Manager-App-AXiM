@@ -3,6 +3,7 @@ import { supabase } from '../supabase/supabase';
 import { toast } from 'react-toastify';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
+const BASE_URL = import.meta.env.VITE_EDGE_WORKER_URL || 'http://localhost:8787';
 
 export const echoService = {
   async fetchRecords(filters = {}) {
@@ -37,14 +38,7 @@ export const echoService = {
     // In production, this calls the Cloudflare Worker endpoint
     console.log(`Triggering replay for ${recordIds.length} records...`);
     
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) {
-      console.warn("VITE_WORKER_URL is not set. Simulating replay locally.");
-      toast.warn("VITE_WORKER_URL is not set. Simulating replay locally.");
-      return new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-
-    const apiUrl = `${workerUrl}/api/v1/replay`;
+    const apiUrl = `${BASE_URL}/api/v1/replay`;
 
     const CHUNK_SIZE = 50;
     const chunks = [];
@@ -113,13 +107,7 @@ export const echoService = {
 
 
   async triggerTriage(recordId) {
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) {
-      console.warn("VITE_WORKER_URL is not set.");
-      return { error: 'Worker URL not configured' };
-    }
-
-    const apiUrl = `${workerUrl}/api/v1/triage`;
+    const apiUrl = `${BASE_URL}/api/v1/triage`;
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -163,13 +151,7 @@ export const echoService = {
   },
 
   async forcePruneDatabase() {
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) {
-      console.warn("VITE_WORKER_URL is not set.");
-      return { error: 'Worker URL not configured' };
-    }
-
-    const apiUrl = `${workerUrl}/api/v1/force-prune`;
+    const apiUrl = `${BASE_URL}/api/v1/force-prune`;
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -211,13 +193,7 @@ export const echoService = {
   },
 
   async fetchSystemStatus() {
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) {
-      console.warn("VITE_WORKER_URL is not set.");
-      return { error: 'Worker URL not configured' };
-    }
-
-    const apiUrl = `${workerUrl}/api/v1/system-status`;
+    const apiUrl = `${BASE_URL}/api/v1/system-status`;
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -260,13 +236,7 @@ export const echoService = {
 
 
   async fetchAuditLogs() {
-    const workerUrl = import.meta.env.VITE_WORKER_URL;
-    if (!workerUrl) {
-      console.warn("VITE_WORKER_URL is not set.");
-      return { error: 'Worker URL not configured' };
-    }
-
-    const apiUrl = `${workerUrl}/api/v1/audit-logs`;
+    const apiUrl = `${BASE_URL}/api/v1/audit-logs`;
 
     try {
         const { data: { session } } = await supabase.auth.getSession();

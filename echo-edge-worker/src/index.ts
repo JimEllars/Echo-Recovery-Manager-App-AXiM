@@ -76,6 +76,32 @@ export default {
       return handleIngress(request, env);
     }
 
+    if (request.method === 'POST' && url.pathname === '/api/v1/simulate-failure') {
+      const authHeader = request.headers.get('x-axim-internal-key');
+      if (authHeader !== env.AXIM_INTERNAL_KEY) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      const dummyPayload = {
+        source_node: 'CRM Enrichment Bridge',
+        target_destination: 'AXiM Core Pipeline',
+        error_reason: 'Simulated Environment Failure (E2E Test)',
+        payload: { simulated: true, timestamp: Date.now(), bad_data: '<<CORRUPTED>>' }
+      };
+
+      const simulatedRequest = new Request('http://localhost/api/v1/ingest-failure', {
+        method: 'POST',
+        headers: request.headers,
+        body: JSON.stringify(dummyPayload)
+      });
+
+      return handleIngress(simulatedRequest, env);
+    }
+
+
     if (request.method === 'POST' && url.pathname === '/api/v1/replay') {
       const { isValid, payload } = await verifyJwt(request, env);
       if (!isValid) {
