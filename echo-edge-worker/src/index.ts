@@ -6,6 +6,7 @@ export interface Env {
   SUPABASE_ANON_KEY: string;
   SUPABASE_JWT_SECRET: string;
   ECHO_STATE_KV: KVNamespace;
+  AXIM_ALERT_WEBHOOK_URL?: string;
 }
 
 const ALLOWED_ORIGINS = [
@@ -84,7 +85,7 @@ export default {
         });
       }
       const operator_id = payload?.email || payload?.sub || "unknown";
-      return handleReplay(request, env, operator_id);
+      return handleReplay(request, env, ctx, operator_id);
     }
 
     if (request.method === 'POST' && url.pathname === '/api/v1/triage') {
@@ -108,7 +109,7 @@ export default {
         });
       }
       const operator_id = payload?.email || payload?.sub || 'unknown';
-      const result = await pruneRecords(env, operator_id);
+      const result = await pruneRecords(env, ctx, operator_id);
       return new Response(JSON.stringify(result), {
         status: result.success ? 200 : 500,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
@@ -172,6 +173,6 @@ export default {
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    await pruneRecords(env, 'system_cron');
+    await pruneRecords(env, ctx, 'system_cron');
   }
 };

@@ -1,10 +1,11 @@
 import { Env, getCorsHeaders } from './index';
+import { dispatchAlert } from './utils/webhook';
 
 const TABLE_NAME = 'echo_dlq_records_1783829654384';
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-export async function handleReplay(request: Request, env: Env, operator_id: string): Promise<Response> {
+export async function handleReplay(request: Request, env: Env, ctx: ExecutionContext, operator_id: string): Promise<Response> {
   // Validate Authorization header
   const authHeader = request.headers.get('x-axim-internal-key') || request.headers.get('Authorization');
 
@@ -187,6 +188,14 @@ export async function handleReplay(request: Request, env: Env, operator_id: stri
     recentLogs = recentLogs.slice(0, 20);
 
     await env.ECHO_STATE_KV.put('recent_audit_logs', JSON.stringify(recentLogs));
+
+
+    ctx.waitUntil(dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+      action: 'BATCH_REPLAY',
+      operator_id: operator_id,
+      success_count: successCount,
+      fail_count: failCount
+    }));
 
     return new Response(JSON.stringify({ success: true, results }), {
 

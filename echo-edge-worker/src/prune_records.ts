@@ -1,6 +1,7 @@
 import { Env } from './index';
+import { dispatchAlert } from './utils/webhook';
 
-export async function pruneRecords(env: Env, operator_id: string = 'system_cron'): Promise<{ success: boolean; count?: number; error?: string }> {
+export async function pruneRecords(env: Env, ctx: ExecutionContext, operator_id: string = 'system_cron'): Promise<{ success: boolean; count?: number; error?: string }> {
   // Calculate timestamp for 7 days ago
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -84,6 +85,12 @@ export async function pruneRecords(env: Env, operator_id: string = 'system_cron'
         error: errorText
       });
 
+      ctx.waitUntil(dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+        action: 'DATABASE_PRUNE',
+        operator_id: operator_id,
+        records_purged: 0,
+        error: errorText
+      }));
       return { success: false, error: errorText };
     }
 
@@ -97,6 +104,12 @@ export async function pruneRecords(env: Env, operator_id: string = 'system_cron'
       status: 'success'
     });
 
+    ctx.waitUntil(dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+      action: 'DATABASE_PRUNE',
+      operator_id: operator_id,
+      records_purged: deletedRecords.length
+    }));
+
     return { success: true, count: deletedRecords.length };
   } catch (error) {
     console.error('Error executing prune records logic:', error);
@@ -109,6 +122,13 @@ export async function pruneRecords(env: Env, operator_id: string = 'system_cron'
       status: 'error',
       error: errorMsg
     });
+
+    ctx.waitUntil(dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+      action: 'DATABASE_PRUNE',
+      operator_id: operator_id,
+      records_purged: 0,
+      error: errorMsg
+    }));
 
     return { success: false, error: errorMsg };
   }
