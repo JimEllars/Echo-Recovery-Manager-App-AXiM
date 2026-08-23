@@ -66,7 +66,7 @@ export default function SystemConfig() {
               <p className="text-[10px] text-slate-500 uppercase">Last Rotated</p>
               <p className="text-xs text-slate-400">{config.lastRotated}</p>
             </div>
-            <button className="px-3 py-1.5 hover:bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 transition-colors">
+            <button aria-label={`Manage ${config.label}`} className="px-3 py-1.5 hover:bg-slate-800 rounded-lg text-xs text-slate-300 border border-slate-700 transition-colors">
               Manage
             </button>
           </div>
@@ -94,6 +94,7 @@ export default function SystemConfig() {
           <p className="text-xs text-red-400/70">Manually trigger a database prune operation immediately.</p>
         </div>
         <button
+          aria-label="Force Database Prune"
           onClick={handleForcePruneClick}
           disabled={isPruning}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
@@ -131,12 +132,14 @@ export default function SystemConfig() {
 
             <div className="flex justify-end gap-3">
               <button
+                aria-label="Cancel Prune"
                 onClick={() => setShowConfirmModal(false)}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors border border-slate-700"
               >
                 Cancel
               </button>
               <button
+                aria-label="Confirm Prune"
                 onClick={handleConfirmPrune}
                 className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-500 transition-colors border border-red-500 flex items-center gap-2"
               >

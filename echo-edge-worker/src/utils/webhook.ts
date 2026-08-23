@@ -6,8 +6,6 @@ export async function dispatchAlert(url: string | undefined, payload: {
   records_purged?: number;
   error?: string;
 }) {
-  if (!url) return;
-
   try {
     const textFields = [
       `**Action:** ${payload.action}`,
@@ -30,6 +28,11 @@ export async function dispatchAlert(url: string | undefined, payload: {
     const message = {
       content: `🚨 **AXiM Echo Recovery Alert** 🚨\n\n${textFields.join('\n')}`
     };
+
+    if (!url || url.trim() === '') {
+      console.log(`[DEV_MODE_WEBHOOK_BYPASS] ${JSON.stringify(message)}`);
+      return;
+    }
 
     await fetch(url, {
       method: 'POST',
