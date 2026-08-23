@@ -1,7 +1,7 @@
 import { Env, getCorsHeaders } from './index';
 import { dispatchAlert } from './utils/webhook';
 
-const TABLE_NAME = 'echo_dlq_records_1783829654384';
+
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
@@ -59,7 +59,7 @@ export async function handleReplay(request: Request, env: Env, ctx: ExecutionCon
     // Assuming IDs are numeric or safe strings without commas.
     const cleanIds = recordIds.map(id => encodeURIComponent(String(id))).join(',');
 
-    const supabaseUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=in.(${cleanIds})&select=*`;
+    const supabaseUrl = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?id=in.(${cleanIds})&select=*`;
 
     const getResponse = await fetch(supabaseUrl, {
       method: 'GET',
@@ -96,7 +96,7 @@ export async function handleReplay(request: Request, env: Env, ctx: ExecutionCon
 
       const chunkPromises = chunk.map(async (record) => {
         const updateStatus = async (status: string, errorReason: string | null = null) => {
-          const updateUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(record.id)}`;
+          const updateUrl = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?id=eq.${encodeURIComponent(record.id)}`;
           const body: any = { status };
           if (errorReason) {
             body.error_reason = errorReason;

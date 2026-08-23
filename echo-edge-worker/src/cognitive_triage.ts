@@ -1,6 +1,6 @@
 import { Env, getCorsHeaders } from './index';
 
-const TABLE_NAME = 'echo_dlq_records_1783829654384';
+
 
 /**
  * Extracts valid JSON from a string that might be wrapped in Markdown code blocks.
@@ -79,7 +79,7 @@ export async function handleTriage(request: Request, env: Env, operator_id: stri
 
   try {
     // 1. Fetch the raw JSON payload from the Supabase echo_dlq_records table
-    const supabaseUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(recordId)}&select=*`;
+    const supabaseUrl = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?id=eq.${encodeURIComponent(recordId)}&select=*`;
     const getResponse = await fetch(supabaseUrl, {
       method: 'GET',
       headers: {
@@ -159,7 +159,7 @@ export async function handleTriage(request: Request, env: Env, operator_id: stri
     }
 
     // 3. Update the Supabase record to 'patched' status
-    const updateUrl = `${env.SUPABASE_URL}/rest/v1/${TABLE_NAME}?id=eq.${encodeURIComponent(recordId)}`;
+    const updateUrl = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?id=eq.${encodeURIComponent(recordId)}`;
     const updateResponse = await fetch(updateUrl, {
       method: 'PATCH',
       headers: {

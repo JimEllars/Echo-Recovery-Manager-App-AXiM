@@ -12,7 +12,7 @@ export async function pruneRecords(env: Env, ctx: ExecutionContext, operator_id:
     updated_at: `lte.${cutoffTimestamp}`
   });
 
-  const url = `${env.SUPABASE_URL}/rest/v1/echo_dlq_records?${queryParams.toString()}`;
+  const url = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?${queryParams.toString()}`;
 
 
   const updateKV = async (newLog: any) => {
