@@ -97,7 +97,14 @@ export function useEchoData() {
 
   useEffect(() => {
     if (!isFeedPaused && queuedRecords.length > 0) {
-      setRecords((prev) => [...queuedRecords, ...prev]);
+      if (queuedRecords.length > 100) {
+          const cappedRecords = queuedRecords.slice(0, 100);
+          setRecords((prev) => [...cappedRecords, ...prev]);
+          toast.info("100+ new records detected. Feed refreshed.");
+      } else {
+          setRecords((prev) => [...queuedRecords, ...prev]);
+      }
+
       setQueuedRecords([]);
     }
   }, [isFeedPaused, queuedRecords]);
@@ -105,12 +112,17 @@ export function useEchoData() {
   const handleReplay = useCallback(async () => {
     if (selectedIds.length === 0) return;
     setIsReplaying(true);
-    setReplayProgress(50);
+    setReplayProgress(0);
 
     try {
       toast.info(`Initiating batch replay for ${selectedIds.length} records...`);
 
-      const response = await echoService.triggerReplay(selectedIds);
+      const response = await echoService.triggerReplay(selectedIds, (current, total) => {
+          setReplayProgress((current / total) * 100);
+          if (total > 1) {
+              toast.info(`Processing batch ${current} of ${total}...`);
+          }
+      });
 
       if (response && response.success) {
         let successes = 0;

@@ -33,7 +33,7 @@ export const echoService = {
       .eq('id', recordId);
   },
 
-  async triggerReplay(recordIds) {
+  async triggerReplay(recordIds, onProgress) {
     // In production, this calls the Cloudflare Worker endpoint
     console.log(`Triggering replay for ${recordIds.length} records...`);
     
@@ -45,6 +45,15 @@ export const echoService = {
     }
 
     const apiUrl = `${workerUrl}/api/v1/replay`;
+
+    const CHUNK_SIZE = 50;
+    const chunks = [];
+    for (let i = 0; i < recordIds.length; i += CHUNK_SIZE) {
+      chunks.push(recordIds.slice(i, i + CHUNK_SIZE));
+    }
+
+    let masterResults = [];
+    let totalChunks = chunks.length;
 
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -59,27 +68,39 @@ export const echoService = {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({ recordIds })
-        });
+        let currentChunkIndex = 0;
+        for (const chunk of chunks) {
+            currentChunkIndex++;
+            if (onProgress) {
+                onProgress(currentChunkIndex, totalChunks);
+            }
 
-        if (!response.ok) {
-             if (response.status === 401) {
-                 console.error("Token expired or unauthorized. Signing out.");
-                 await supabase.auth.signOut();
-                 toast.error("Session expired. Please log in again.");
-                 return { error: 'Unauthorized. Session expired.' };
-             }
-             const errorText = await response.text();
-             console.error("Worker replay failed", errorText);
-             toast.error(`Replay Failed: ${response.status} - Edge Node Unreachable. Please try again.`);
-             return { error: 'Failed to trigger replay in worker' };
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ recordIds: chunk })
+            });
+
+            if (!response.ok) {
+                 if (response.status === 401) {
+                     console.error("Token expired or unauthorized. Signing out.");
+                     await supabase.auth.signOut();
+                     toast.error("Session expired. Please log in again.");
+                     return { error: 'Unauthorized. Session expired.' };
+                 }
+                 const errorText = await response.text();
+                 console.error("Worker replay failed", errorText);
+                 toast.error(`Replay Failed on batch ${currentChunkIndex}: ${response.status} - Edge Node Unreachable. Please try again.`);
+                 return { error: `Failed to trigger replay in worker on batch ${currentChunkIndex}` };
+            }
+
+            const data = await response.json();
+            if (data.results) {
+                masterResults = masterResults.concat(data.results);
+            }
         }
 
-        const data = await response.json();
-        return data;
+        return { success: true, results: masterResults };
 
     } catch(err) {
         console.error("Worker replay request failed:", err);
