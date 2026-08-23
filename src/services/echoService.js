@@ -150,6 +150,48 @@ export const echoService = {
     }
   },
 
+  async simulateEcosystemFailure() {
+    const apiUrl = `${BASE_URL}/api/v1/simulate-failure`;
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const headers = {
+            "Content-Type": "application/json",
+            "x-axim-internal-key": import.meta.env.VITE_AXIM_INTERNAL_KEY || "your-secret-key"
+        };
+
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(apiUrl, {
+            method: "POST",
+            headers
+        });
+
+        if (!response.ok) {
+             if (response.status === 401) {
+                 console.error("Token expired or unauthorized. Signing out.");
+                 await supabase.auth.signOut();
+                 toast.error("Session expired. Please log in again.");
+                 return { error: "Unauthorized. Session expired." };
+             }
+             const errorText = await response.text();
+             console.error("Worker simulate failure failed", errorText);
+             return { error: "Failed to trigger simulate failure in worker" };
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch(err) {
+        console.error("Worker simulate failure request failed:", err);
+        return { error: "Failed to trigger simulate failure request" };
+    }
+  },
+
   async forcePruneDatabase() {
     const apiUrl = `${BASE_URL}/api/v1/force-prune`;
 

@@ -28,6 +28,7 @@ export default function AuditLogFeed() {
   }, []);
 
   const handleRefresh = async () => {
+    if (refreshing || loading) return;
     setRefreshing(true);
     const res = await echoService.fetchAuditLogs();
     if (!res.error) {
@@ -74,7 +75,7 @@ export default function AuditLogFeed() {
                aria-label="Refresh Logs"
                onClick={handleRefresh}
                disabled={refreshing || loading}
-               className="ml-2 px-3 py-1.5 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors border border-slate-700 disabled:opacity-50"
+               className="ml-2 px-3 py-1.5 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors border border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
              >
                <SafeIcon icon={FiRefreshCw} className={refreshing ? "animate-spin" : ""} />
                Refresh Logs

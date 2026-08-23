@@ -5,10 +5,11 @@ import SafeIcon from '../common/SafeIcon';
 import { echoService } from '../services/echoService';
 import { toast } from 'react-toastify';
 
-const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle, FiTrash2 } = FiIcons;
+const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle, FiTrash2, FiActivity } = FiIcons;
 
 export default function SystemConfig() {
   const [isPruning, setIsPruning] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const configs = [
@@ -25,6 +26,7 @@ export default function SystemConfig() {
   const handleConfirmPrune = async () => {
     setShowConfirmModal(false);
     setIsPruning(true);
+    setIsProcessing(true);
     try {
       const response = await echoService.forcePruneDatabase();
       if (response && response.success) {
@@ -36,6 +38,23 @@ export default function SystemConfig() {
       toast.error(`Force prune failed: ${err.message}`);
     } finally {
       setIsPruning(false);
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSimulateFailure = async () => {
+    setIsProcessing(true);
+    try {
+      const response = await echoService.simulateEcosystemFailure();
+      if (response && !response.error) {
+        toast.success("Test payload dispatched to ingress.");
+      } else {
+        toast.error(`Simulation failed: ${response?.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      toast.error(`Simulation failed: ${err.message}`);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -88,7 +107,31 @@ export default function SystemConfig() {
         </div>
       </div>
 
-      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 flex items-center justify-between mt-8">
+      <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-6 flex items-center justify-between mt-8">
+        <div>
+          <h3 className="text-sm font-semibold text-cyan-400 mb-1 uppercase tracking-wider">E2E Simulator</h3>
+          <p className="text-xs text-cyan-400/70">Inject a synthetic downstream failure payload into the ingress.</p>
+        </div>
+        <button
+          aria-label="Simulate Downstream Failure"
+          onClick={handleSimulateFailure}
+          disabled={isProcessing}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+            isProcessing
+              ? 'bg-transparent text-cyan-400 border-cyan-500/50 opacity-50 cursor-not-allowed'
+              : 'bg-transparent text-cyan-400 hover:bg-cyan-500/20 border-cyan-500/50 hover:border-cyan-500'
+          }`}
+        >
+          {isProcessing && !isPruning ? (
+             <div className="w-4 h-4 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full animate-spin"></div>
+          ) : (
+            <SafeIcon icon={FiActivity} />
+          )}
+          {isProcessing && !isPruning ? 'Simulating...' : 'Simulate Downstream Failure'}
+        </button>
+      </div>
+
+      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-6 flex items-center justify-between mt-4">
         <div>
           <h3 className="text-sm font-semibold text-red-400 mb-1 uppercase tracking-wider">Emergency Protocol</h3>
           <p className="text-xs text-red-400/70">Manually trigger a database prune operation immediately.</p>
@@ -96,10 +139,10 @@ export default function SystemConfig() {
         <button
           aria-label="Force Database Prune"
           onClick={handleForcePruneClick}
-          disabled={isPruning}
+          disabled={isProcessing}
           className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-            isPruning
-              ? 'bg-transparent text-red-400 border-red-500/50 cursor-not-allowed'
+            isProcessing
+              ? 'bg-transparent text-red-400 border-red-500/50 opacity-50 cursor-not-allowed'
               : 'bg-transparent text-red-400 hover:bg-red-500/20 border-red-500/50 hover:border-red-500'
           }`}
         >
