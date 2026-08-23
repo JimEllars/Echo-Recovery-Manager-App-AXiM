@@ -73,6 +73,14 @@ export default {
       });
     }
 
+
+    if (request.method === 'GET' && (url.pathname === '/api/v1/health' || url.pathname === '/health')) {
+      return new Response(JSON.stringify({ status: "healthy", timestamp: Date.now(), region: (request as any).cf?.colo || "local" }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
+
     if (request.method === 'POST' && url.pathname === '/api/v1/ingest-failure') {
       return handleIngress(request, env);
     }

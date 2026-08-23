@@ -116,11 +116,29 @@ export async function handleReplay(request: Request, env: Env, ctx: ExecutionCon
           const targetUrl = record.target_destination;
           const bodyPayload = record.original_payload;
 
+
           if (!targetUrl) {
              const errorMsg = 'No target_destination';
              await updateStatus('failed', errorMsg);
              return { id: record.id, success: false, error: errorMsg };
           }
+
+          let isValidUrl = true;
+          try {
+            const urlObj = new URL(targetUrl);
+            if (urlObj.protocol !== 'http:' && urlObj.protocol !== 'https:') {
+              isValidUrl = false;
+            }
+          } catch (e) {
+            isValidUrl = false;
+          }
+
+          if (!isValidUrl) {
+            const errorMsg = 'Invalid target_destination URL format';
+            await updateStatus('failed', errorMsg);
+            return { id: record.id, success: false, error: errorMsg };
+          }
+
 
           // POST to target destination
           const postResponse = await fetch(targetUrl, {
