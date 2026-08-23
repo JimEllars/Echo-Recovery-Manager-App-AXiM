@@ -58,7 +58,7 @@ export function useEchoData() {
           'postgres_changes',
           { event: '*', schema: 'public', table: echoService.getTableName() },
           (payload) => {
-            console.log('Real-time update received:', payload);
+            // console.log('Real-time update received:', payload);
 
             if (payload.eventType === 'INSERT') {
               if (isFeedPausedRef.current) {
