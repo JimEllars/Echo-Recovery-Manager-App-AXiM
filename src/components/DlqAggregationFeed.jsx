@@ -29,6 +29,7 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold text-slate-200">Unified Error Aggregation</h2>
           <button
+            aria-label={isFeedPaused ? "Resume Feed" : "Pause Feed"}
             onClick={() => setIsFeedPaused && setIsFeedPaused(!isFeedPaused)}
             className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${isFeedPaused ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'}`}
           >
@@ -50,29 +51,30 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
               className="bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 w-64"
             />
           </div>
-          <button className="p-2 border border-slate-800 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800">
+          <button aria-label="Filter feeds" className="p-2 border border-slate-800 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800">
             <SafeIcon icon={FiFilter} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 w-full overflow-x-auto overflow-y-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wider text-slate-500 sticky top-0 backdrop-blur-md">
-              <th className="p-4 w-12">
+            <tr className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wider text-slate-500 sticky top-0 z-10 backdrop-blur-md">
+              <th className="p-4 w-12 whitespace-nowrap">
                 <input 
                   type="checkbox" 
+                  aria-label="Select all patched records"
                   className="rounded border-slate-700 bg-slate-900 checked:bg-cyan-500"
                   onChange={handleSelectAll}
                   checked={records.length > 0 && selectedIds.length === records.filter(r => r.status === 'patched').length}
                 />
               </th>
-              <th className="p-4 font-medium">Record ID</th>
-              <th className="p-4 font-medium">Source Node</th>
-              <th className="p-4 font-medium">Destination</th>
-              <th className="p-4 font-medium">Status</th>
-              <th className="p-4 font-medium text-right">Actions</th>
+              <th className="p-4 font-medium whitespace-nowrap">Record ID</th>
+              <th className="p-4 font-medium whitespace-nowrap">Source Node</th>
+              <th className="p-4 font-medium whitespace-nowrap">Destination</th>
+              <th className="p-4 font-medium whitespace-nowrap">Status</th>
+              <th className="p-4 font-medium text-right whitespace-nowrap">Actions</th>
             </tr>
           </thead>
           <tbody className="text-sm divide-y divide-slate-800">
@@ -84,11 +86,12 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
                     onRowClick(record);
                   }
                 }}
-                className={`hover:bg-slate-800/50 cursor-pointer transition-colors group ${record.status === 'replaying' ? 'opacity-50 pointer-events-none' : ''}`}
+                className={`hover:bg-slate-800/50 cursor-pointer transition-colors group whitespace-nowrap ${record.status === 'replaying' ? 'opacity-50 pointer-events-none' : ''}`}
               >
                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
                   <input 
                     type="checkbox" 
+                    aria-label={`Select record ${record.id}`}
                     className="rounded border-slate-700 bg-slate-900 checked:bg-cyan-500"
                     checked={selectedIds.includes(record.id)}
                     onChange={(e) => toggleSelect(e, record.id)}
@@ -105,7 +108,7 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
                   {record.status === 'replaying' ? (
                     <SafeIcon icon={FiLoader} className="animate-spin text-cyan-500 mx-auto" />
                   ) : (
-                    <button className="p-1 hover:text-slate-200 transition-colors" disabled={record.status === 'replaying'}>
+                    <button aria-label={`View actions for ${record.id}`} className="p-1 hover:text-slate-200 transition-colors" disabled={record.status === 'replaying'}>
                       <SafeIcon icon={FiMoreHorizontal} />
                     </button>
                   )}

@@ -71,6 +71,7 @@ export default function AuditLogFeed() {
           <div className="flex gap-2 items-center text-xs text-slate-500">
              <span>Live Edge Telemetry</span>
              <button
+               aria-label="Refresh Logs"
                onClick={handleRefresh}
                disabled={refreshing || loading}
                className="ml-2 px-3 py-1.5 flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-md transition-colors border border-slate-700 disabled:opacity-50"
@@ -81,24 +82,24 @@ export default function AuditLogFeed() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-x-auto p-4">
+        <div className="flex-1 w-full overflow-x-auto overflow-y-hidden p-4">
           {loading ? (
              <div className="flex flex-col items-center justify-center h-full text-slate-400">
                <SafeIcon icon={FiLoader} className="animate-spin text-2xl mb-4 text-cyan-500" />
                <p>Fetching immutable logs from edge...</p>
              </div>
           ) : error ? (
-             <div className="flex items-center justify-center h-full text-red-400">
+             <div className="flex items-center justify-center h-full text-red-400 whitespace-nowrap">
                <p>{error}</p>
              </div>
           ) : logs.length === 0 ? (
-             <div className="flex items-center justify-center h-full text-slate-500">
+             <div className="flex items-center justify-center h-full text-slate-500 whitespace-nowrap">
                <p>No audit events recorded yet.</p>
              </div>
           ) : (
             <div className="space-y-4 min-w-[600px]">
               {logs.map((log, i) => (
-                <div key={i} className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex items-center gap-6">
+                <div key={i} className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex items-center gap-6 whitespace-nowrap">
                   <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
                     <SafeIcon icon={getActionIcon(log.action)} className="text-slate-400 text-lg" />
                   </div>
