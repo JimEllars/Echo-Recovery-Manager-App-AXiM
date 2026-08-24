@@ -44,6 +44,17 @@ export default function EdgeTelemetry({ records = [] }) {
     ]
   };
 
+  const resolvedCount = records.filter(r => r.status === 'resolved').length;
+  const failedCount = records.filter(r => r.status === 'failed').length;
+  const totalResolvedOrFailed = resolvedCount + failedCount || 1;
+  const recoverySuccessRate = ((resolvedCount / totalResolvedOrFailed) * 100).toFixed(1) + '%';
+
+  const patchedCount = records.filter(r => r.status === 'patched').length;
+  const totalRecords = records.length || 1;
+  const cognitiveTriageCoverage = (((patchedCount + resolvedCount) / totalRecords) * 100).toFixed(1) + '%';
+
+  const pendingIngressQueue = records.filter(r => r.status === 'pending').length;
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -56,15 +67,26 @@ export default function EdgeTelemetry({ records = [] }) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {['Ingress Latency', 'Triage Success', 'Replay Velocity'].map((metric, i) => (
-          <div key={i} className="bg-slate-900 border border-slate-800 rounded-xl p-5">
-            <p className="text-xs text-slate-500 uppercase font-medium">{metric}</p>
-            <div className="flex items-end gap-2 mt-2">
-              <span className="text-2xl font-bold text-slate-100">{[42, 94, 1200][i]}{['ms', '%', '/min'][i]}</span>
-              <span className="text-xs text-emerald-400 mb-1">↑ 12%</span>
-            </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p className="text-xs text-slate-500 uppercase font-medium">Recovery Success Rate</p>
+          <div className="flex items-end gap-2 mt-2">
+            <span className="text-2xl font-bold text-slate-100">{recoverySuccessRate}</span>
           </div>
-        ))}
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p className="text-xs text-slate-500 uppercase font-medium">Cognitive Triage Coverage</p>
+          <div className="flex items-end gap-2 mt-2">
+            <span className="text-2xl font-bold text-slate-100">{cognitiveTriageCoverage}</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p className="text-xs text-slate-500 uppercase font-medium">Pending Ingress Queue</p>
+          <div className="flex items-end gap-2 mt-2">
+            <span className="text-2xl font-bold text-slate-100">{pendingIngressQueue}</span>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
