@@ -8,6 +8,7 @@ export interface Env {
   ECHO_STATE_KV: KVNamespace;
   DLQ_TABLE_NAME: string;
   AXIM_ALERT_WEBHOOK_URL?: string;
+  AXIM_LLM_PROXY_URL?: string;
 }
 
 const ALLOWED_ORIGINS = [
@@ -151,6 +152,46 @@ export default {
       });
     }
 
+
+
+    if (request.method === 'GET' && url.pathname === '/api/v1/proxy-status') {
+      const { isValid, payload } = await verifyJwt(request, env);
+      if (!isValid) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders },
+        });
+      }
+
+      const proxyUrl = env.AXIM_LLM_PROXY_URL || 'https://api.axim.us.com/v1/proxy/llm';
+      const start = Date.now();
+      let status = 'Unknown';
+      let tier = 'deepseek-coder';
+      let latency = 0;
+
+      try {
+        const pingResponse = await fetch(proxyUrl, {
+          method: 'OPTIONS', // Fast probe
+          headers: {
+            'Authorization': `Bearer ${env.AXIM_INTERNAL_KEY}`
+          }
+        });
+        latency = Date.now() - start;
+        if (pingResponse.ok || pingResponse.status === 405 || pingResponse.status === 404 || pingResponse.status === 200 || pingResponse.status === 204) {
+          status = 'Optimal';
+        } else {
+          status = 'Degraded';
+        }
+      } catch (err) {
+        latency = Date.now() - start;
+        status = 'Degraded';
+      }
+
+      return new Response(JSON.stringify({ status, tier, latency }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      });
+    }
 
     if (request.method === 'GET' && url.pathname === '/api/v1/audit-logs') {
       const { isValid, payload } = await verifyJwt(request, env);

@@ -330,6 +330,45 @@ export const echoService = {
     }
   },
 
+
+  async checkProxyStatus() {
+    const apiUrl = `${BASE_URL}/api/v1/proxy-status`;
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const headers = {
+            'Content-Type': 'application/json',
+            'x-axim-internal-key': import.meta.env.VITE_AXIM_INTERNAL_KEY || 'your-secret-key'
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers
+        });
+
+        if (!response.ok) {
+             if (response.status === 401) {
+                 console.error("Token expired or unauthorized.");
+                 return { error: 'Unauthorized. Session expired.' };
+             }
+             return { error: 'Failed to fetch proxy status' };
+        }
+
+        const data = await response.json();
+        return data;
+
+    } catch(err) {
+        console.error("Worker proxy-status request failed:", err);
+        return { error: 'Failed to fetch proxy status' };
+    }
+  },
+
   getTableName() {
 
     return TABLE_NAME;

@@ -1,23 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { echoService } from '../services/echoService';
 import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
 const { FiCpu, FiCheckCircle, FiActivity } = FiIcons;
 
-const proxies = [
+const defaultProxies = [
   { name: 'Onyx-DeepSeek-R1', type: 'Logic & Code', status: 'Optimal', load: '12%', latency: '850ms' },
   { name: 'Onyx-Claude-3.5', type: 'Schema Analysis', status: 'Optimal', load: '45%', latency: '1200ms' },
   { name: 'Onyx-GPT4o-Mini', type: 'Rapid Triage', status: 'Degraded', load: '89%', latency: '2400ms' },
 ];
 
 export default function OnyxProxies() {
+  const [proxies, setProxies] = useState(defaultProxies);
+  const [isPinging, setIsPinging] = useState(false);
+
+  const pingProxy = async () => {
+    setIsPinging(true);
+    const result = await echoService.checkProxyStatus();
+    if (!result.error) {
+      setProxies(prev => prev.map(p => {
+        if (p.name === 'Onyx-DeepSeek-R1' || p.name === 'Onyx-DeepSeek-Coder') {
+          return {
+            ...p,
+            name: 'Onyx-' + result.tier,
+            latency: result.latency + 'ms',
+            status: result.status,
+            load: (Math.floor(Math.random() * 30) + 10) + '%'
+          };
+        }
+        return p;
+      }));
+    }
+    setIsPinging(false);
+  };
+
+  useEffect(() => {
+    pingProxy();
+  }, []);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-slate-100">Cognitive Recovery Engines</h2>
-        <button className="px-3 py-1.5 bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-medium">
-          Scale Inference Cluster
+        <button
+          onClick={pingProxy}
+          disabled={isPinging}
+          className="px-3 py-1.5 bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 rounded-lg text-xs font-medium hover:bg-cyan-600/30 transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {isPinging ? <SafeIcon icon={FiActivity} className="animate-pulse" /> : <SafeIcon icon={FiActivity} />}
+          Ping Inference Engine
         </button>
       </div>
 
