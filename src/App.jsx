@@ -43,8 +43,7 @@ export default function App() {
           setSession(data.session);
         }
         // Cleanly strip token from URL
-        const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
-        window.history.replaceState({ path: newUrl }, '', newUrl);
+        window.history.replaceState({}, document.title, window.location.pathname);
         setAuthLoading(false);
       });
     } else {
