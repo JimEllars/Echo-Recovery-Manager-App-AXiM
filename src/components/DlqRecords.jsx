@@ -13,6 +13,34 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick 
     return r.status === filter;
   });
 
+  const exportToCsv = () => {
+    if (!filteredRecords.length) return;
+
+    const headers = ['ID', 'Source Node', 'Target Destination', 'Status', 'Error Reason', 'Created At'];
+    const escapeCsv = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+
+    const rows = filteredRecords.map(r => [
+      escapeCsv(r.id),
+      escapeCsv(r.source_node),
+      escapeCsv(r.target_destination),
+      escapeCsv(r.status),
+      escapeCsv(r.error_reason),
+      escapeCsv(r.created_at)
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `echo-dlq-export-${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -33,7 +61,11 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick 
         </div>
         
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800">
+          <button
+            onClick={exportToCsv}
+            disabled={!filteredRecords.length}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
             <SafeIcon icon={FiDownload} />
             Export CSV
           </button>

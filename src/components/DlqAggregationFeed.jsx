@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 import Badge from './ui/Badge';
@@ -6,7 +6,8 @@ import Badge from './ui/Badge';
 const { FiSearch, FiFilter, FiMoreHorizontal, FiLoader, FiPauseCircle, FiPlayCircle } = FiIcons;
 
 export default function DlqAggregationFeed({ records, selectedIds, onSelect, onRowClick, isFeedPaused, setIsFeedPaused, queuedRecords = [] }) {
-  
+  const [searchQuery, setSearchQuery] = useState('');
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
       onSelect(records.filter(r => r.status === 'patched').map(r => r.id));
@@ -22,6 +23,18 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
       : [...selectedIds, id];
     onSelect(newSelected);
   };
+
+  const filteredRecords = records.filter(record => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+
+    return (
+      (record.id && record.id.toLowerCase().includes(q)) ||
+      (record.source_node && record.source_node.toLowerCase().includes(q)) ||
+      (record.target_destination && record.target_destination.toLowerCase().includes(q)) ||
+      (record.error_reason && record.error_reason.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[600px]">
@@ -48,6 +61,8 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
             <input 
               type="text" 
               placeholder="Search payloads..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-4 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500/50 w-64"
             />
           </div>
@@ -57,7 +72,7 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
         </div>
       </div>
 
-      <div className="flex-1 w-full overflow-x-auto overflow-y-hidden">
+      <div className="flex-1 w-full overflow-x-auto overflow-y-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950/50 text-xs uppercase tracking-wider text-slate-500 sticky top-0 z-10 backdrop-blur-md">
@@ -78,43 +93,51 @@ export default function DlqAggregationFeed({ records, selectedIds, onSelect, onR
             </tr>
           </thead>
           <tbody className="text-sm divide-y divide-slate-800">
-            {records.map((record) => (
-              <tr 
-                key={record.id} 
-                onClick={() => {
-                  if (record.status !== 'replaying') {
-                    onRowClick(record);
-                  }
-                }}
-                className={`hover:bg-slate-800/50 cursor-pointer transition-colors group whitespace-nowrap ${record.status === 'replaying' ? 'opacity-50 pointer-events-none' : ''}`}
-              >
-                <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                  <input 
-                    type="checkbox" 
-                    aria-label={`Select record ${record.id}`}
-                    className="rounded border-slate-700 bg-slate-900 checked:bg-cyan-500"
-                    checked={selectedIds.includes(record.id)}
-                    onChange={(e) => toggleSelect(e, record.id)}
-                    disabled={record.status !== 'patched' || record.status === 'replaying'}
-                  />
-                </td>
-                <td className="p-4 font-mono text-slate-300">{record.id}</td>
-                <td className="p-4 text-slate-300">{record.source_node}</td>
-                <td className="p-4 text-slate-400 truncate max-w-[200px]">{record.target_destination}</td>
-                <td className="p-4">
-                  <Badge status={record.status} />
-                </td>
-                <td className="p-4 text-right text-slate-500">
-                  {record.status === 'replaying' ? (
-                    <SafeIcon icon={FiLoader} className="animate-spin text-cyan-500 mx-auto" />
-                  ) : (
-                    <button aria-label={`View actions for ${record.id}`} className="p-1 hover:text-slate-200 transition-colors" disabled={record.status === 'replaying'}>
-                      <SafeIcon icon={FiMoreHorizontal} />
-                    </button>
-                  )}
+            {filteredRecords.length === 0 ? (
+              <tr>
+                <td colSpan="6" className="p-8 text-center text-slate-500 italic bg-slate-900/50">
+                  No matching failure payloads found.
                 </td>
               </tr>
-            ))}
+            ) : (
+              filteredRecords.map((record) => (
+                <tr
+                  key={record.id}
+                  onClick={() => {
+                    if (record.status !== 'replaying') {
+                      onRowClick(record);
+                    }
+                  }}
+                  className={`hover:bg-slate-800/50 cursor-pointer transition-colors group whitespace-nowrap ${record.status === 'replaying' ? 'opacity-50 pointer-events-none' : ''}`}
+                >
+                  <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select record ${record.id}`}
+                      className="rounded border-slate-700 bg-slate-900 checked:bg-cyan-500"
+                      checked={selectedIds.includes(record.id)}
+                      onChange={(e) => toggleSelect(e, record.id)}
+                      disabled={record.status !== 'patched' || record.status === 'replaying'}
+                    />
+                  </td>
+                  <td className="p-4 font-mono text-slate-300">{record.id}</td>
+                  <td className="p-4 text-slate-300">{record.source_node}</td>
+                  <td className="p-4 text-slate-400 truncate max-w-[200px]">{record.target_destination}</td>
+                  <td className="p-4">
+                    <Badge status={record.status} />
+                  </td>
+                  <td className="p-4 text-right text-slate-500">
+                    {record.status === 'replaying' ? (
+                      <SafeIcon icon={FiLoader} className="animate-spin text-cyan-500 mx-auto" />
+                    ) : (
+                      <button aria-label={`View actions for ${record.id}`} className="p-1 hover:text-slate-200 transition-colors" disabled={record.status === 'replaying'}>
+                        <SafeIcon icon={FiMoreHorizontal} />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
