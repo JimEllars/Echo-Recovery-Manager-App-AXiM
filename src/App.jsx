@@ -91,6 +91,7 @@ export default function App() {
 function Dashboard() {
   const [activeTab, setActiveTab] = useState('Cockpit Overview');
   const [viewingRecord, setViewingRecord] = useState(null);
+  const [edgeOnline, setEdgeOnline] = useState(false);
   
   const { 
     records, 
@@ -106,6 +107,23 @@ function Dashboard() {
     setIsFeedPaused,
     queuedRecords
   } = useEchoData();
+
+
+  useEffect(() => {
+    let intervalId;
+    const checkHealth = async () => {
+      const isOnline = await echoService.checkEdgeHealth();
+      setEdgeOnline(isOnline);
+    };
+
+    // Initial check
+    checkHealth();
+
+    // Polling every 30 seconds
+    intervalId = setInterval(checkHealth, 30000);
+
+    return () => clearInterval(intervalId);
+  }, []);
 
   const handleApprovePatch = async (id) => {
     const record = records.find(r => r.id === id);
@@ -203,8 +221,8 @@ function Dashboard() {
             <span>Environment: <strong className="text-cyan-400 font-mono">PRODUCTION</strong></span>
             <span className="w-px h-4 bg-slate-700"></span>
             <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
-              <span>{isOnline ? 'Edge Workers: Active' : 'Edge Workers: Offline'}</span>
+              <div className={`w-2 h-2 rounded-full ${edgeOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+              <span>{edgeOnline ? 'Edge Workers: Active' : 'Edge Workers: Offline'}</span>
             </div>
             <span className="w-px h-4 bg-slate-700"></span>
             <button onClick={handleLogout} className="text-slate-400 hover:text-white transition-colors text-xs font-medium px-3 py-1.5 border border-slate-700 hover:border-slate-500 rounded-md">

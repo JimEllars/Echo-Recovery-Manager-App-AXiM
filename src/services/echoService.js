@@ -2,10 +2,21 @@
 import { supabase } from '../supabase/supabase';
 import { toast } from 'react-toastify';
 
-const TABLE_NAME = 'echo_dlq_records_1783829654384';
+const TABLE_NAME = import.meta.env.VITE_DLQ_TABLE_NAME || 'echo_dlq_records';
 const BASE_URL = import.meta.env.VITE_EDGE_WORKER_URL || 'http://localhost:8787';
 
 export const echoService = {
+
+  async checkEdgeHealth() {
+    try {
+      const response = await fetch(`${BASE_URL}/api/v1/health`);
+      return response.ok;
+    } catch (error) {
+      console.error("Edge Health check failed:", error);
+      return false;
+    }
+  },
+
   async fetchRecords(filters = {}) {
     // Fallback if Supabase not connected
     if (!import.meta.env.VITE_SUPABASE_URL) {
