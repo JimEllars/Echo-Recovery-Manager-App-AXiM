@@ -5,6 +5,12 @@ export async function dispatchAlert(url: string | undefined, payload: {
   fail_count?: number;
   records_purged?: number;
   error?: string;
+  total_volume?: number;
+  pending_count?: number;
+  patched_count?: number;
+  resolved_count?: number;
+  failed_count?: number;
+  pruned_today?: number;
 }) {
   try {
     const textFields = [
@@ -20,6 +26,24 @@ export async function dispatchAlert(url: string | undefined, payload: {
     }
     if (payload.records_purged !== undefined) {
       textFields.push(`**Records Purged:** ${payload.records_purged}`);
+    }
+    if (payload.total_volume !== undefined) {
+      textFields.push(`**Total Volume:** ${payload.total_volume}`);
+    }
+    if (payload.pending_count !== undefined) {
+      textFields.push(`**Pending:** ${payload.pending_count}`);
+    }
+    if (payload.patched_count !== undefined) {
+      textFields.push(`**Patched:** ${payload.patched_count}`);
+    }
+    if (payload.resolved_count !== undefined) {
+      textFields.push(`**Resolved:** ${payload.resolved_count}`);
+    }
+    if (payload.failed_count !== undefined) {
+      textFields.push(`**Failed:** ${payload.failed_count}`);
+    }
+    if (payload.pruned_today !== undefined) {
+      textFields.push(`**Pruned Today:** ${payload.pruned_today}`);
     }
     if (payload.error) {
       textFields.push(`**Error:** ${payload.error}`);

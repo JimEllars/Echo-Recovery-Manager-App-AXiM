@@ -37,6 +37,8 @@ import { handleIngress } from './ingress';
 import { handleReplay } from './egress_replay';
 import { handleTriage } from './cognitive_triage';
 import { pruneRecords } from './prune_records';
+import { dispatchAlert } from './utils/webhook';
+
 
 
 async function verifyJwt(request: Request, env: Env): Promise<{ isValid: boolean, payload: any }> {
@@ -249,6 +251,43 @@ export default {
   },
 
   async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
-    await pruneRecords(env, ctx, 'system_cron');
+    const pruneResult = await pruneRecords(env, ctx, 'system_cron');
+
+    try {
+      // Fetch current record counts by status from Supabase
+      const url = `${env.SUPABASE_URL}/rest/v1/${env.DLQ_TABLE_NAME}?select=status`;
+      const response = await fetch(url, {
+        headers: {
+          'apikey': env.SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${env.SUPABASE_JWT_SECRET}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const records = await response.json() as any[];
+        let pending = 0, patched = 0, resolved = 0, failed = 0;
+
+        for (const record of records) {
+          if (record.status === 'pending') pending++;
+          else if (record.status === 'patched') patched++;
+          else if (record.status === 'resolved') resolved++;
+          else if (record.status === 'error' || record.status === 'failed') failed++;
+        }
+
+        ctx.waitUntil(dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+          action: 'DAILY_DIGEST',
+          operator_id: 'system_cron',
+          total_volume: records.length,
+          pending_count: pending,
+          patched_count: patched,
+          resolved_count: resolved,
+          failed_count: failed,
+          pruned_today: pruneResult.count || 0
+        } as any));
+      }
+    } catch (err) {
+      console.error('Failed to dispatch daily digest:', err);
+    }
   }
 };

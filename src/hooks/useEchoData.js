@@ -7,6 +7,7 @@ export function useEchoData() {
   const [records, setRecords] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [isTriaging, setIsTriaging] = useState(false);
   const [replayProgress, setReplayProgress] = useState(0);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -150,8 +151,41 @@ export function useEchoData() {
     }
   }, [selectedIds]);
 
+
+  const handleBatchTriage = useCallback(async () => {
+    if (selectedIds.length === 0) return;
+    setIsTriaging(true);
+    setReplayProgress(0);
+
+    try {
+      toast.info(`Initiating batch triage for ${selectedIds.length} records...`);
+
+      const response = await echoService.triggerBatchTriage(selectedIds, (current, total) => {
+          setReplayProgress((current / total) * 100);
+      });
+
+      if (response && response.success) {
+        toast.success(`Batch triage complete for ${selectedIds.length} records.`);
+      } else {
+        toast.error(`Batch triage failed: ${response?.error || 'Unknown error'}`);
+      }
+
+      setReplayProgress(100);
+      setTimeout(() => {
+        setSelectedIds([]);
+        setIsTriaging(false);
+      }, 500);
+    } catch (err) {
+      console.error("Failed to trigger batch triage:", err);
+      toast.error(`Failed to trigger batch triage: ${err.message}`);
+      setIsTriaging(false);
+      setReplayProgress(0);
+    }
+  }, [selectedIds]);
+
   return {
     records,
+
     selectedIds,
     setSelectedIds,
     isReplaying,
@@ -163,6 +197,8 @@ export function useEchoData() {
     isOnline,
     isFeedPaused,
     setIsFeedPaused,
-    queuedRecords
+    queuedRecords,
+    isTriaging,
+    handleBatchTriage
   };
 }
