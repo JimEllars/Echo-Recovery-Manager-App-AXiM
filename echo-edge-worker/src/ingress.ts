@@ -21,9 +21,31 @@ export async function handleIngress(request: Request, env: Env): Promise<Respons
     });
   }
 
+  const contentLength = request.headers.get('content-length');
+  const MAX_PAYLOAD_SIZE = 262144; // 256 KB
+
+  if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_SIZE) {
+    return new Response(JSON.stringify({ error: "Payload too large. Maximum supported ingress payload size is 256 KB." }), {
+      status: 413,
+      headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
+    });
+  }
+
   let payload;
   try {
-    payload = await request.json();
+    const bodyText = await request.text();
+
+    if (!contentLength) {
+      const byteLength = new TextEncoder().encode(bodyText).length;
+      if (byteLength > MAX_PAYLOAD_SIZE) {
+        return new Response(JSON.stringify({ error: "Payload too large. Maximum supported ingress payload size is 256 KB." }), {
+          status: 413,
+          headers: { 'Content-Type': 'application/json', ...(getCorsHeaders(request)) },
+        });
+      }
+    }
+
+    payload = JSON.parse(bodyText);
 
     // Validate basic payload structure
     if (!payload || typeof payload !== 'object') {

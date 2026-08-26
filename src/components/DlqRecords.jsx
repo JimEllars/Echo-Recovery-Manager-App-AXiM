@@ -1,13 +1,11 @@
-import React, { useState } from 'react';
+import React from 'react';
 import DlqAggregationFeed from './DlqAggregationFeed';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiFilter, FiDownload } = FiIcons;
+const { FiDownload } = FiIcons;
 
-export default function DlqRecords({ records, selectedIds, onSelect, onRowClick }) {
-  const [filter, setFilter] = useState('all');
-
+export default function DlqRecords({ records, selectedIds, onSelect, onRowClick, filter, onFilterChange }) {
   const filteredRecords = records.filter(r => {
     if (filter === 'all') return true;
     return r.status === filter;
@@ -48,7 +46,7 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick 
           {['all', 'pending', 'patched', 'resolved', 'failed'].map((f) => (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => onFilterChange(f)}
               className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
                 filter === f 
                   ? 'bg-slate-800 text-cyan-400 shadow-sm' 
