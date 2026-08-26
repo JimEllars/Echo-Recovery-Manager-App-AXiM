@@ -124,7 +124,7 @@ export async function handleTriage(request: Request, env: Env, operator_id: stri
       };
 
       // Fallback proxy URL for development/production
-      const proxyUrl = 'https://api.axim.us.com/v1/proxy/llm';
+      const proxyUrl = env.AXIM_LLM_PROXY_URL || 'https://api.axim.us.com/v1/proxy/llm';
 
       const aiResponse = await fetch(proxyUrl, {
         method: 'POST',

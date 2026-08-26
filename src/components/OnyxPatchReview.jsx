@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { echoService } from '../services/echoService';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
@@ -15,13 +16,16 @@ export default function OnyxPatchReview({ record, onClose, onApprove }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    await echoService.triggerTriage(record.id);
-    // Let real-time updates change the prop, but we might want to stop the loader after a few seconds if it's mock
-    // or just leave it since the component might re-render or close if updated externally.
-    // For safety, we stop it after 5 seconds if real-time doesn't catch it quickly.
-    setTimeout(() => {
-        setIsGenerating(false);
-    }, 5000);
+    try {
+      const res = await echoService.triggerTriage(record.id);
+      if (res && res.error) {
+        toast.error(res.error);
+      } else {
+        toast.success("Onyx patch generated successfully.");
+      }
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleApprove = async () => {
