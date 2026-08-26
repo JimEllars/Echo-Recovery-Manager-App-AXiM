@@ -92,6 +92,7 @@ function Dashboard() {
   const [activeTab, setActiveTab] = useState('Cockpit Overview');
   const [viewingRecord, setViewingRecord] = useState(null);
   const [edgeOnline, setEdgeOnline] = useState(false);
+  const [dlqFilter, setDlqFilter] = useState('all');
   
   const { 
     records, 
@@ -143,6 +144,11 @@ function Dashboard() {
     await supabase.auth.signOut();
   };
 
+  const handleDrilldown = (statusFilter) => {
+    setDlqFilter(statusFilter);
+    setActiveTab('DLQ Records');
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -157,7 +163,7 @@ function Dashboard() {
       case 'Cockpit Overview':
         return (
           <>
-            <StatsOverview records={records} />
+            <StatsOverview records={records} onDrilldown={handleDrilldown} />
 
             {!isOnline && (
               <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
@@ -191,6 +197,8 @@ function Dashboard() {
               selectedIds={selectedIds}
               onSelect={setSelectedIds}
               onRowClick={setViewingRecord}
+              filter={dlqFilter}
+              onFilterChange={setDlqFilter}
             />
           </>
         );
