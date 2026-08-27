@@ -11,6 +11,7 @@ export default function AuditLogFeed() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
     async function loadLogs() {
@@ -100,7 +101,11 @@ export default function AuditLogFeed() {
           ) : (
             <div className="space-y-4 min-w-[600px]">
               {logs.map((log, i) => (
-                <div key={i} className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex items-center gap-6 whitespace-nowrap">
+                <div key={i} className="flex flex-col gap-2">
+                <div
+                  className="bg-slate-950 border border-slate-800 p-4 rounded-lg flex items-center gap-6 whitespace-nowrap cursor-pointer hover:bg-slate-900 transition-colors"
+                  onClick={() => setExpandedRow(expandedRow === i ? null : i)}
+                >
                   <div className="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center shrink-0">
                     <SafeIcon icon={getActionIcon(log.action)} className="text-slate-400 text-lg" />
                   </div>
@@ -132,6 +137,25 @@ export default function AuditLogFeed() {
                        </div>
                      </div>
                   </div>
+                </div>
+                  {expandedRow === i && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="bg-slate-950 rounded-lg p-4 font-mono text-xs text-slate-400 overflow-x-auto border border-slate-800"
+                    >
+                      <pre>
+{JSON.stringify({
+  action: log.action,
+  operator: log.triggered_by,
+  timestamp: log.timestamp,
+  target_record: log.target_record || null,
+  success_count: log.success_count || 0,
+  fail_count: log.fail_count || 0,
+}, null, 2)}
+                      </pre>
+                    </motion.div>
+                  )}
                 </div>
               ))}
             </div>

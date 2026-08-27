@@ -142,7 +142,7 @@ export default {
         }),
         {
           status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", 'Cache-Control': 'no-store, no-cache, must-revalidate', ...corsHeaders },
         },
       );
     }
@@ -288,7 +288,7 @@ export default {
 
       return new Response(JSON.stringify({ status, tier, latency }), {
         status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
+        headers: { "Content-Type": "application/json", 'Cache-Control': 'no-store, no-cache, must-revalidate', ...corsHeaders },
       });
     }
 
@@ -306,7 +306,7 @@ export default {
         const logs = logsStr ? JSON.parse(logsStr) : [];
         return new Response(JSON.stringify(logs), {
           status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", 'Cache-Control': 'public, max-age=5, s-maxage=5', ...corsHeaders },
         });
       } catch (err) {
         return new Response(
@@ -336,7 +336,7 @@ export default {
 
         return new Response(JSON.stringify({ last_prune_run: lastPruneRun }), {
           status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
+          headers: { "Content-Type": "application/json", 'Cache-Control': 'public, max-age=5, s-maxage=5', ...corsHeaders },
         });
       } catch (err) {
         return new Response(
