@@ -47,7 +47,7 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
             disabled={isReplaying || isTriaging}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
               isTriaging || isReplaying
-                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                ? 'bg-slate-700 text-slate-400 opacity-50 cursor-not-allowed'
                 : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20'
             }`}
           >
@@ -61,7 +61,7 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
           disabled={isReplaying || isTriaging}
           className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
             isReplaying || isTriaging
-              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+              ? 'bg-slate-700 text-slate-400 opacity-50 cursor-not-allowed'
               : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
           }`}
         >

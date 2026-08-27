@@ -1,0 +1,56 @@
+--- echo-edge-worker/src/index.ts
++++ echo-edge-worker/src/index.ts
+@@ -62,6 +62,25 @@
+       });
+     }
+
++    const requiredVars = [
++      'AXIM_INTERNAL_KEY',
++      'SUPABASE_URL',
++      'SUPABASE_ANON_KEY',
++      'SUPABASE_JWT_SECRET',
++      'DLQ_TABLE_NAME'
++    ];
++    const missingVars = requiredVars.filter(v => !(env as any)[v]);
++
++    if (missingVars.length > 0 || !env.ECHO_STATE_KV) {
++      const details = [
++        ...missingVars.map(v => `Missing environment variable: ${v}`),
++        ...(env.ECHO_STATE_KV ? [] : ['Missing KV namespace binding: ECHO_STATE_KV'])
++      ].join(', ');
++
++      return new Response(JSON.stringify({ success: false, error: "CONFIGURATION_ERROR", details }), {
++        status: 500,
++        headers: { 'Content-Type': 'application/json', ...corsHeaders },
++      });
++    }
++
++    if (request.method === 'GET' && url.pathname === '/api/telemetry/health') {
++      let kvConnected = false;
++      let kvLatency = 0;
++      try {
++        const start = Date.now();
++        await env.ECHO_STATE_KV.get('__ping__');
++        kvLatency = Date.now() - start;
++        kvConnected = true;
++      } catch (e) {
++        kvConnected = false;
++      }
++      return new Response(JSON.stringify({
++        status: "healthy",
++        timestamp: Date.now(),
++        region: (request as any).cf?.colo || "local",
++        limits: {
++          cpu_ms: 50,
++          memory_mb: 128
++        },
++        kv_connected: kvConnected,
++        kv_latency_ms: kvLatency
++      }), {
++        status: 200,
++        headers: { 'Content-Type': 'application/json', ...corsHeaders },
++      });
++    }
++
+     if (request.method === 'GET' && (url.pathname === '/api/v1/health' || url.pathname === '/health')) {
+       return new Response(JSON.stringify({ status: "healthy", timestamp: Date.now(), region: (request as any).cf?.colo || "local" }), {
