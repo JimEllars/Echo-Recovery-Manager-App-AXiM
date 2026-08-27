@@ -1,8 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { motion } from 'framer-motion';
 
 export default function EdgeTelemetry({ records = [] }) {
+  const [telemetry, setTelemetry] = useState(null);
+
+  useEffect(() => {
+    const fetchTelemetry = async () => {
+      try {
+        const url = import.meta.env.VITE_EDGE_WORKER_URL || 'http://localhost:8787';
+        const res = await fetch(`${url}/api/telemetry/health`);
+        if (res.ok) {
+          const data = await res.json();
+          setTelemetry(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch edge telemetry', e);
+      }
+    };
+    fetchTelemetry();
+    const interval = setInterval(fetchTelemetry, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Aggregate failures by source_node
   const sourceNodeCounts = records.reduce((acc, record) => {
@@ -65,6 +84,26 @@ export default function EdgeTelemetry({ records = [] }) {
         <h3 className="text-sm font-semibold text-slate-200 mb-6 uppercase tracking-wider">Ecosystem Failure Rate (24h)</h3>
         <ReactECharts option={option} style={{ height: '300px' }} />
       </div>
+
+      {telemetry && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p className="text-xs text-slate-500 uppercase font-medium mb-3">Edge Worker Health</p>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase">Region</span>
+              <span className="text-sm font-bold text-slate-200">{telemetry.region}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase">Latency (KV)</span>
+              <span className="text-sm font-bold text-slate-200">{telemetry.kv_latency_ms} ms</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase">KV Status</span>
+              <span className={`text-sm font-bold ${telemetry.kv_connected ? 'text-emerald-400' : 'text-rose-400'}`}>{telemetry.kv_connected ? 'Connected' : 'Disconnected'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">

@@ -4,7 +4,24 @@ import { supabase } from '../supabase/supabase';
 import { toast } from 'react-toastify';
 
 export function useEchoData() {
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState(() => {
+    try {
+      const stored = sessionStorage.getItem('echo_records');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (records.length > 0) {
+        sessionStorage.setItem('echo_records', JSON.stringify(records));
+      }
+    } catch (e) {
+      console.error('Failed to save to sessionStorage', e);
+    }
+  }, [records]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isReplaying, setIsReplaying] = useState(false);
   const [isTriaging, setIsTriaging] = useState(false);

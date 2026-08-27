@@ -1,21 +1,24 @@
-export async function dispatchAlert(url: string | undefined, payload: {
-  action: string;
-  operator_id: string;
-  success_count?: number;
-  fail_count?: number;
-  records_purged?: number;
-  error?: string;
-  total_volume?: number;
-  pending_count?: number;
-  patched_count?: number;
-  resolved_count?: number;
-  failed_count?: number;
-  pruned_today?: number;
-}) {
+export async function dispatchAlert(
+  url: string | undefined,
+  payload: {
+    action: string;
+    operator_id: string;
+    success_count?: number;
+    fail_count?: number;
+    records_purged?: number;
+    error?: string;
+    total_volume?: number;
+    pending_count?: number;
+    patched_count?: number;
+    resolved_count?: number;
+    failed_count?: number;
+    pruned_today?: number;
+  },
+) {
   try {
     const textFields = [
       `**Action:** ${payload.action}`,
-      `**Operator ID:** ${payload.operator_id}`
+      `**Operator ID:** ${payload.operator_id}`,
     ];
 
     if (payload.success_count !== undefined) {
@@ -50,23 +53,23 @@ export async function dispatchAlert(url: string | undefined, payload: {
     }
 
     const message = {
-      content: `🚨 **AXiM Echo Recovery Alert** 🚨\n\n${textFields.join('\n')}`
+      content: `🚨 **AXiM Echo Recovery Alert** 🚨\n\n${textFields.join("\n")}`,
     };
 
-    if (!url || url.trim() === '') {
+    if (!url || url.trim() === "") {
       console.log(`[DEV_MODE_WEBHOOK_BYPASS] ${JSON.stringify(message)}`);
       return;
     }
 
     await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(message)
+      body: JSON.stringify(message),
     });
   } catch (err) {
     // Silently fail to avoid crashing the edge worker if the webhook is down
-    console.error('Failed to dispatch alert webhook:', err);
+    console.error("Failed to dispatch alert webhook:", err);
   }
 }
