@@ -117,7 +117,31 @@ export const echoService = {
   // Expose table name for subscriptions
 
 
+
+  async triggerBatchTriage(recordIds, onProgress) {
+    let masterResults = [];
+    let current = 0;
+
+    for (const recordId of recordIds) {
+      current++;
+      if (onProgress) {
+        onProgress(current, recordIds.length);
+      }
+
+      const res = await this.triggerTriage(recordId);
+      masterResults.push(res);
+
+      if (current < recordIds.length) {
+        // 250ms throttle between requests to prevent inference proxy rate-limiting
+        await new Promise(r => setTimeout(r, 250));
+      }
+    }
+
+    return { success: true, results: masterResults };
+  },
+
   async triggerTriage(recordId) {
+
     const apiUrl = `${BASE_URL}/api/v1/triage`;
 
     try {

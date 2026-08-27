@@ -106,7 +106,9 @@ function Dashboard() {
     error,
     isFeedPaused,
     setIsFeedPaused,
-    queuedRecords
+    queuedRecords,
+    isTriaging,
+    handleBatchTriage
   } = useEchoData();
 
 
@@ -217,7 +219,7 @@ function Dashboard() {
 
   return (
     <div className="flex h-screen bg-slate-950 font-sans overflow-hidden">
-      <Sidebar activeTab={activeTab} onNavigate={setActiveTab} isOnline={isOnline} />
+      <Sidebar activeTab={activeTab} onNavigate={setActiveTab} isOnline={isOnline} edgeOnline={edgeOnline} />
       
       <main className="flex-1 flex flex-col relative overflow-hidden">
         <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur-sm flex items-center px-8 shrink-0">
@@ -250,8 +252,14 @@ function Dashboard() {
         <ReplayOrchestrator 
           selectedCount={selectedIds.length}
           isReplaying={isReplaying}
+          isTriaging={isTriaging}
           progress={replayProgress}
           onReplay={handleReplay}
+          onBatchTriage={handleBatchTriage}
+          canTriage={selectedIds.length > 0 && selectedIds.every(id => {
+            const r = records.find(rec => rec.id === id);
+            return r && r.status === 'pending';
+          })}
         />
       </main>
 

@@ -3,10 +3,10 @@ import { motion } from 'framer-motion';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
 
-const { FiPlay, FiLoader } = FiIcons;
+const { FiPlay, FiLoader, FiZap } = FiIcons;
 
-export default function ReplayOrchestrator({ selectedCount, isReplaying, progress, onReplay }) {
-  if (selectedCount === 0 && !isReplaying) return null;
+export default function ReplayOrchestrator({ selectedCount, isReplaying, progress, onReplay, onBatchTriage, isTriaging, canTriage }) {
+  if (selectedCount === 0 && !isReplaying && !isTriaging) return null;
 
   return (
     <motion.div 
@@ -16,12 +16,21 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
     >
       <div className="flex-1">
         <h3 className="text-sm font-medium text-slate-200">
-          {isReplaying ? 'Replaying Payloads...' : `${selectedCount} Payloads Selected`}
+          {isReplaying ? 'Replaying Payloads...' : isTriaging ? 'Triaging Payloads...' : `${selectedCount} Payloads Selected`}
         </h3>
+
         {isReplaying ? (
           <div className="mt-2 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
             <motion.div 
               className="h-full bg-cyan-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+            />
+          </div>
+        ) : isTriaging ? (
+          <div className="mt-2 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-purple-500"
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
             />
@@ -31,18 +40,36 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
         )}
       </div>
 
-      <button
-        onClick={onReplay}
-        disabled={isReplaying}
-        className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
-          isReplaying 
-            ? 'bg-slate-700 text-slate-400 cursor-not-allowed' 
-            : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
-        }`}
-      >
-        <SafeIcon icon={isReplaying ? FiLoader : FiPlay} className={isReplaying ? 'animate-spin' : ''} />
-        {isReplaying ? `${Math.round(progress)}%` : 'Execute Replay'}
-      </button>
+      <div className="flex gap-3">
+        {canTriage && (
+          <button
+            onClick={onBatchTriage}
+            disabled={isReplaying || isTriaging}
+            className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+              isTriaging || isReplaying
+                ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/20'
+            }`}
+          >
+            <SafeIcon icon={isTriaging ? FiLoader : FiZap} className={isTriaging ? 'animate-spin' : ''} />
+            {isTriaging ? `${Math.round(progress)}%` : 'Batch AI Triage'}
+          </button>
+        )}
+
+        <button
+          onClick={onReplay}
+          disabled={isReplaying || isTriaging}
+          className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
+            isReplaying || isTriaging
+              ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+              : 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-lg shadow-cyan-500/20'
+          }`}
+        >
+          <SafeIcon icon={isReplaying ? FiLoader : FiPlay} className={isReplaying ? 'animate-spin' : ''} />
+          {isReplaying ? `${Math.round(progress)}%` : 'Execute Replay'}
+        </button>
+      </div>
     </motion.div>
+
   );
 }

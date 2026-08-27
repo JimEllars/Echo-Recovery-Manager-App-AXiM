@@ -15,7 +15,7 @@ const navItems = [
   { icon: FiFileText, label: 'Audit Logs' },
 ];
 
-export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {
+export default function Sidebar({ activeTab, onNavigate, isOnline = true, edgeOnline = false }) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -59,14 +59,21 @@ export default function Sidebar({ activeTab, onNavigate, isOnline = true }) {
           Sign Out
         </button>
       </div>
-      <div className="p-4 border-t border-slate-800">
+
+      <div className="p-4 border-t border-slate-800 space-y-3">
         <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 flex items-center gap-3">
           <div className={`w-2 h-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
           <span className={`text-xs font-medium ${isOnline ? 'text-slate-400' : 'text-red-400'}`}>
-             {isOnline ? 'AXiM Core Online' : 'AXiM Core Offline'}
+             {isOnline ? 'Database Stream Online' : 'Database Stream Offline'}
           </span>
         </div>
-      </div>
+        <div className="bg-slate-950 rounded-lg p-3 border border-slate-800 flex items-center gap-3">
+          <div className={`w-2 h-2 rounded-full ${edgeOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+          <span className={`text-xs font-medium ${edgeOnline ? 'text-slate-400' : 'text-red-400'}`}>
+             {edgeOnline ? 'Edge Gateway Online' : 'Edge Gateway Offline'}
+          </span>
+        </div>
+              </div>
     </div>
   );
 }
