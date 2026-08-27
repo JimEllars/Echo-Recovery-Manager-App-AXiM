@@ -128,14 +128,19 @@ export function useEchoData() {
   }, [isFeedPaused, queuedRecords]);
 
   const handleReplay = useCallback(async () => {
-    if (selectedIds.length === 0) return;
+    // Only replay patched/failed items
+    const validIds = selectedIds.filter(id => {
+      const record = records.find(r => r.id === id);
+      return record && (record.status === 'patched' || record.status === 'failed');
+    });
+    if (validIds.length === 0) return;
     setIsReplaying(true);
     setReplayProgress(0);
 
     try {
       toast.info(`Initiating batch replay for ${selectedIds.length} records...`);
 
-      const response = await echoService.triggerReplay(selectedIds, (current, total) => {
+      const response = await echoService.triggerReplay(validIds, (current, total) => {
           setReplayProgress((current / total) * 100);
           if (total > 1) {
               toast.info(`Processing batch ${current} of ${total}...`);
@@ -170,14 +175,19 @@ export function useEchoData() {
 
 
   const handleBatchTriage = useCallback(async () => {
-    if (selectedIds.length === 0) return;
+    // Only triage pending items
+    const validIds = selectedIds.filter(id => {
+      const record = records.find(r => r.id === id);
+      return record && record.status === 'pending';
+    });
+    if (validIds.length === 0) return;
     setIsTriaging(true);
     setReplayProgress(0);
 
     try {
       toast.info(`Initiating batch triage for ${selectedIds.length} records...`);
 
-      const response = await echoService.triggerBatchTriage(selectedIds, (current, total) => {
+      const response = await echoService.triggerBatchTriage(validIds, (current, total) => {
           setReplayProgress((current / total) * 100);
       });
 

@@ -5,7 +5,7 @@ import SafeIcon from '../common/SafeIcon';
 
 const { FiDownload } = FiIcons;
 
-export default function DlqRecords({ records, selectedIds, onSelect, onRowClick, filter, onFilterChange }) {
+export default function DlqRecords({ records, selectedIds, onSelect, onRowClick, filter, onFilterChange, isFeedPaused, setIsFeedPaused, queuedRecords }) {
   const filteredRecords = records.filter(r => {
     if (filter === 'all') return true;
     return r.status === filter;
@@ -75,6 +75,9 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick,
         selectedIds={selectedIds}
         onSelect={onSelect}
         onRowClick={onRowClick}
+        isFeedPaused={isFeedPaused}
+        setIsFeedPaused={setIsFeedPaused}
+        queuedRecords={queuedRecords}
       />
     </div>
   );

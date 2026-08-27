@@ -5,7 +5,7 @@ import SafeIcon from '../common/SafeIcon';
 
 const { FiPlay, FiLoader, FiZap } = FiIcons;
 
-export default function ReplayOrchestrator({ selectedCount, isReplaying, progress, onReplay, onBatchTriage, isTriaging, canTriage }) {
+export default function ReplayOrchestrator({ selectedCount, isReplaying, progress, onReplay, onBatchTriage, isTriaging, canTriage, canReplay, breakdownStats }) {
   if (selectedCount === 0 && !isReplaying && !isTriaging) return null;
 
   return (
@@ -36,7 +36,15 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
             />
           </div>
         ) : (
-          <p className="text-xs text-slate-400 mt-1">Ready for mass re-ingestion to ecosystem.</p>
+          breakdownStats ? (
+            <p className="text-xs text-slate-400 mt-1">
+              {breakdownStats.pending > 0 && <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 mr-2">{breakdownStats.pending} Pending (Triage Ready)</span>}
+              {breakdownStats.patched > 0 && <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mr-2">{breakdownStats.patched} Patched (Replay Ready)</span>}
+              {breakdownStats.failed > 0 && <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">{breakdownStats.failed} Failed (Replay Ready)</span>}
+            </p>
+          ) : (
+            <p className="text-xs text-slate-400 mt-1">Ready for mass re-ingestion to ecosystem.</p>
+          )
         )}
       </div>
 
@@ -44,7 +52,7 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
         {canTriage && (
           <button
             onClick={onBatchTriage}
-            disabled={isReplaying || isTriaging}
+            disabled={isReplaying || isTriaging || !canTriage}
             className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
               isTriaging || isReplaying
                 ? 'bg-slate-700 text-slate-400 opacity-50 cursor-not-allowed'
@@ -58,7 +66,7 @@ export default function ReplayOrchestrator({ selectedCount, isReplaying, progres
 
         <button
           onClick={onReplay}
-          disabled={isReplaying || isTriaging}
+          disabled={isReplaying || isTriaging || !canReplay}
           className={`px-5 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${
             isReplaying || isTriaging
               ? 'bg-slate-700 text-slate-400 opacity-50 cursor-not-allowed'

@@ -201,6 +201,9 @@ function Dashboard() {
               onRowClick={setViewingRecord}
               filter={dlqFilter}
               onFilterChange={setDlqFilter}
+              isFeedPaused={isFeedPaused}
+              setIsFeedPaused={setIsFeedPaused}
+              queuedRecords={queuedRecords}
             />
           </>
         );
@@ -209,7 +212,7 @@ function Dashboard() {
       case 'Onyx Proxies':
         return <OnyxProxies />;
       case 'System Config':
-        return <SystemConfig />;
+        return <SystemConfig records={records} />;
       case 'Audit Logs':
         return <AuditLogFeed />;
       default:
@@ -256,10 +259,18 @@ function Dashboard() {
           progress={replayProgress}
           onReplay={handleReplay}
           onBatchTriage={handleBatchTriage}
-          canTriage={selectedIds.length > 0 && selectedIds.every(id => {
-            const r = records.find(rec => rec.id === id);
-            return r && r.status === 'pending';
+          canTriage={selectedIds.length > 0 && selectedIds.some(id => records.find(r => r.id === id)?.status === 'pending')}
+          canReplay={selectedIds.length > 0 && selectedIds.some(id => {
+            const status = records.find(r => r.id === id)?.status;
+            return status === 'patched' || status === 'failed';
           })}
+          breakdownStats={selectedIds.length > 0 ? selectedIds.reduce((acc, id) => {
+            const status = records.find(r => r.id === id)?.status;
+            if (status === 'pending') acc.pending++;
+            if (status === 'patched') acc.patched++;
+            if (status === 'failed') acc.failed++;
+            return acc;
+          }, { pending: 0, patched: 0, failed: 0 }) : null}
         />
       </main>
 
