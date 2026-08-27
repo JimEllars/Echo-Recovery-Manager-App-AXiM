@@ -211,7 +211,10 @@ export async function handleReplay(
 
         try {
           const targetUrl = record.target_destination;
-          const bodyPayload = record.original_payload;
+          const bodyPayload =
+            record.status === "patched" && record.proposed_patch
+              ? record.proposed_patch
+              : record.proposed_patch || record.original_payload;
 
           if (!targetUrl) {
             const errorMsg = "No target_destination";
@@ -235,27 +238,62 @@ export async function handleReplay(
             return { id: record.id, success: false, error: errorMsg };
           }
 
-          // POST to target destination
-          const postResponse = await fetch(targetUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-AXiM-Recovery-Trace": `echo-${record.id}`,
-            },
-            body:
-              typeof bodyPayload === "string"
-                ? bodyPayload
-                : JSON.stringify(bodyPayload),
-          });
+          // POST to target destination with retry loop
+          let postResponse: Response | null = null;
+          let retryCount = 0;
+          const maxRetries = 2;
+          let errorMsg = "";
 
-          if (!postResponse.ok) {
-            let responseText = "";
+          while (retryCount <= maxRetries) {
             try {
-              responseText = await postResponse.text();
+              postResponse = await fetch(targetUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-AXiM-Recovery-Trace": `echo-${record.id}`,
+                },
+                body:
+                  typeof bodyPayload === "string"
+                    ? bodyPayload
+                    : JSON.stringify(bodyPayload),
+              });
+
+              if (postResponse.ok) {
+                break;
+              }
+
+              const status = postResponse.status;
+              if (
+                [429, 502, 503, 504].includes(status) &&
+                retryCount < maxRetries
+              ) {
+                retryCount++;
+                const pauseTime = retryCount === 1 ? 300 : 600;
+                await delay(pauseTime);
+                continue;
+              } else {
+                let responseText = "";
+                try {
+                  responseText = await postResponse.text();
+                } catch (e) {
+                  responseText = "Could not read response text";
+                }
+                errorMsg = `Replay Failed: ${status} - ${responseText}`;
+                break;
+              }
             } catch (e) {
-              responseText = "Could not read response text";
+              if (retryCount < maxRetries) {
+                retryCount++;
+                const pauseTime = retryCount === 1 ? 300 : 600;
+                await delay(pauseTime);
+                continue;
+              }
+              errorMsg = `Replay Failed: Network Error - ${(e as Error).message}`;
+              break;
             }
-            const errorMsg = `Replay Failed: ${postResponse.status} - ${responseText}`;
+          }
+
+          if (!postResponse || !postResponse.ok) {
             await updateStatus("failed", errorMsg);
             return { id: record.id, success: false, error: errorMsg };
           }

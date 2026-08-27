@@ -151,7 +151,10 @@ export async function handleIngress(
       target_destination:
         (payload as any).target_destination || "Unknown Target",
       error_reason: (payload as any).error_reason || "Unknown Error",
-      original_payload: (payload as any).original_payload || payload,
+      original_payload:
+        (payload as any).original_payload ||
+        (payload as any).payload ||
+        payload,
       status: "pending",
       // Supabase will automatically handle id and created_at if set up properly.
       // If we need to pass a specific timestamp, we can.
