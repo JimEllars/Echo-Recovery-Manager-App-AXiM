@@ -80,9 +80,14 @@ export const echoService = {
                 onProgress(currentChunkIndex, totalChunks);
             }
 
+            const chunkHeaders = {
+                ...headers,
+                'Idempotency-Key': crypto.randomUUID()
+            };
+
             const response = await fetch(apiUrl, {
                 method: 'POST',
-                headers,
+                headers: chunkHeaders,
                 body: JSON.stringify({ recordIds: chunk })
             });
 
