@@ -61,7 +61,17 @@ export default function DlqAggregationFeed({
     );
   });
 
-  return (
+
+  const recordsPerPage = 50;
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.ceil(filteredRecords.length / recordsPerPage);
+  const paginatedRecords = filteredRecords.slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage);
+
+  // Reset to page 1 when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden flex flex-col h-[600px]">
       <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50">
         <div className="flex items-center gap-3">
@@ -147,7 +157,7 @@ export default function DlqAggregationFeed({
                 </td>
               </tr>
             ) : (
-              filteredRecords.map((record) => (
+              paginatedRecords.map((record) => (
                 <tr
                   key={record.id}
                   onClick={() => {
@@ -199,6 +209,30 @@ export default function DlqAggregationFeed({
             )}
           </tbody>
         </table>
+      {filteredRecords.length > recordsPerPage && (
+        <div className="p-4 border-t border-slate-800 flex items-center justify-between bg-slate-900/50 text-sm">
+          <span className="text-slate-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );

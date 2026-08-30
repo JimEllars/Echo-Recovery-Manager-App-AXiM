@@ -120,7 +120,15 @@ export default function EdgeTelemetry({ records = [] }) {
           <div className="flex items-center gap-6">
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-500 uppercase">Region</span>
-              <span className="text-sm font-bold text-slate-200">{telemetry.region}</span>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-200">{telemetry.region}</span>
+                {telemetry.region === 'local' ? (
+                  <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">(Dev Server)</span>
+                ) : telemetry.region ? (
+                  <span className="text-[10px] text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">(Edge Node)</span>
+                ) : null}
+              </div>
             </div>
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-500 uppercase">Latency (KV)</span>

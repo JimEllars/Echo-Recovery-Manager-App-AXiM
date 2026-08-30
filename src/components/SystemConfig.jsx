@@ -11,15 +11,16 @@ export default function SystemConfig({ records = [] }) {
   const [isPruning, setIsPruning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const internalKey = import.meta.env.VITE_AXIM_INTERNAL_KEY;
+  const maskedKey = internalKey
+    ? '***' + internalKey.slice(-4)
+    : 'Unbound';
 
   const configs = [
-    { label: 'AXIM_INTERNAL_KEY', value: '••••••••••••••••', lastRotated: '2 days ago', icon: FiKey },
+    { label: 'AXIM_INTERNAL_KEY', value: maskedKey, lastRotated: '2 days ago', icon: FiKey },
     { label: 'EDGE_WORKER_URL', value: import.meta.env.VITE_EDGE_WORKER_URL || 'https://echo-edge.axim.workers.dev', lastRotated: 'Live Bound', icon: FiGlobe },
-    { label: 'AUTO_TRIAGE_THRESHOLD', value: '0.85 Confidence', lastRotated: '14 days ago', icon: FiRefreshCw },
   ];
-
-
-  const handleForcePruneClick = () => {
+const handleForcePruneClick = () => {
     setShowConfirmModal(true);
   };
 
