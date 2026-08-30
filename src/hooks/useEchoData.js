@@ -138,7 +138,7 @@ export function useEchoData() {
     setReplayProgress(0);
 
     try {
-      toast.info(`Initiating batch replay for ${selectedIds.length} records...`);
+      toast.info(`Initiating batch replay for ${validIds.length} records...`);
 
       const response = await echoService.triggerReplay(validIds, (current, total) => {
           setReplayProgress((current / total) * 100);
@@ -171,7 +171,7 @@ export function useEchoData() {
       setIsReplaying(false);
       setReplayProgress(0);
     }
-  }, [selectedIds]);
+  }, [selectedIds, records]);
 
 
   const handleBatchTriage = useCallback(async () => {
@@ -185,14 +185,14 @@ export function useEchoData() {
     setReplayProgress(0);
 
     try {
-      toast.info(`Initiating batch triage for ${selectedIds.length} records...`);
+      toast.info(`Initiating batch triage for ${validIds.length} records...`);
 
       const response = await echoService.triggerBatchTriage(validIds, (current, total) => {
           setReplayProgress((current / total) * 100);
       });
 
       if (response && response.success) {
-        toast.success(`Batch triage complete for ${selectedIds.length} records.`);
+        toast.success(`Batch triage complete for ${validIds.length} records.`);
       } else {
         toast.error(`Batch triage failed: ${response?.error || 'Unknown error'}`);
       }
@@ -208,7 +208,7 @@ export function useEchoData() {
       setIsTriaging(false);
       setReplayProgress(0);
     }
-  }, [selectedIds]);
+  }, [selectedIds, records]);
 
   return {
     records,
