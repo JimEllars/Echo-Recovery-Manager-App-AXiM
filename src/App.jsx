@@ -147,6 +147,7 @@ function Dashboard() {
   };
 
   const handleDrilldown = (statusFilter) => {
+    setSelectedIds([]);
     setDlqFilter(statusFilter);
     setActiveTab('DLQ Records');
   };
