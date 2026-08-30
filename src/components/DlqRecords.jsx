@@ -2,6 +2,7 @@ import React from 'react';
 import DlqAggregationFeed from './DlqAggregationFeed';
 import * as FiIcons from 'react-icons/fi';
 import SafeIcon from '../common/SafeIcon';
+import { motion } from 'framer-motion';
 
 const { FiDownload } = FiIcons;
 
@@ -40,7 +41,11 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick,
   };
 
   return (
-    <div className="space-y-4">
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-4"
+    >
       <div className="flex items-center justify-between">
         <div className="flex bg-slate-900 p-1 rounded-lg border border-slate-800">
           {['all', 'pending', 'patched', 'resolved', 'failed'].map((f) => (
@@ -79,6 +84,6 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick,
         setIsFeedPaused={setIsFeedPaused}
         queuedRecords={queuedRecords}
       />
-    </div>
+    </motion.div>
   );
 }

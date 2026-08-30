@@ -169,9 +169,9 @@ function Dashboard() {
             <StatsOverview records={records} onDrilldown={handleDrilldown} />
 
             {!isOnline && (
-              <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
-                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                 <p className="text-sm">Connection to Live Telemetry Lost. Displaying cached data.</p>
+              <div className="mb-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-lg flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                 <p className="text-sm font-medium">Connection to Live Telemetry Lost. Displaying cached data.</p>
               </div>
             )}
 
@@ -190,9 +190,9 @@ function Dashboard() {
         return (
           <>
             {!isOnline && (
-              <div className="mb-4 bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg flex items-center gap-3">
-                 <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                 <p className="text-sm">Connection to Live Telemetry Lost. Displaying cached data.</p>
+              <div className="mb-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-lg flex items-center gap-3">
+                 <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></div>
+                 <p className="text-sm font-medium">Connection to Live Telemetry Lost. Displaying cached data.</p>
               </div>
             )}
             <DlqRecords

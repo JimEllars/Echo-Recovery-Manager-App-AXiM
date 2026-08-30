@@ -14,18 +14,35 @@ export default function AuditLogFeed() {
   const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
-    async function loadLogs() {
-      setLoading(true);
+    let isMounted = true;
+    let timeoutId;
+
+    async function loadLogs(isInitial = false) {
+      if (isInitial) setLoading(true);
       setError(null);
-      const res = await echoService.fetchAuditLogs();
-      if (res.error) {
-        setError(res.error);
-      } else {
-        setLogs(res.data || []);
+      try {
+        const res = await echoService.fetchAuditLogs();
+        if (isMounted) {
+          if (res.error) {
+            setError(res.error);
+          } else {
+            setLogs(res.data || []);
+          }
+        }
+      } catch (err) {
+        if (isMounted) setError('Failed to connect to Edge Worker.');
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+          timeoutId = setTimeout(() => loadLogs(false), 15000);
+        }
       }
-      setLoading(false);
     }
-    loadLogs();
+    loadLogs(true);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const handleRefresh = async () => {
@@ -91,8 +108,10 @@ export default function AuditLogFeed() {
                <p>Fetching immutable logs from edge...</p>
              </div>
           ) : error ? (
-             <div className="flex items-center justify-center h-full text-red-400 whitespace-nowrap">
-               <p>{error}</p>
+             <div className="flex flex-col items-center justify-center h-full text-rose-400 whitespace-nowrap space-y-2">
+               <SafeIcon icon={FiXCircle} className="text-2xl" />
+               <p className="font-medium">Connection to Live Telemetry Lost</p>
+               <p className="text-xs text-rose-400/70">{error}</p>
              </div>
           ) : logs.length === 0 ? (
              <div className="flex items-center justify-center h-full text-slate-500 whitespace-nowrap">

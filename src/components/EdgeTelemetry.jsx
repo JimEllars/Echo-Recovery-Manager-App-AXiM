@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import ReactECharts from 'echarts-for-react';
 import { motion } from 'framer-motion';
+import { echoService } from '../services/echoService';
+import * as FiIcons from 'react-icons/fi';
+import SafeIcon from '../common/SafeIcon';
+
+const { FiClock, FiCpu, FiUser } = FiIcons;
+
 
 export default function EdgeTelemetry({ records = [] }) {
+  const [systemStatus, setSystemStatus] = useState(null);
   const [telemetry, setTelemetry] = useState(null);
 
   useEffect(() => {
@@ -80,6 +87,28 @@ export default function EdgeTelemetry({ records = [] }) {
       animate={{ opacity: 1 }}
       className="space-y-6"
     >
+      {systemStatus?.last_prune_run && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+          <p className="text-xs text-slate-500 uppercase font-medium mb-3">Last Database Prune</p>
+          <div className="flex items-center gap-6">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><SafeIcon icon={FiClock} /> Timestamp</span>
+              <span className="text-sm font-bold text-slate-200">
+                {new Intl.DateTimeFormat('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(systemStatus.last_prune_run.timestamp))}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><SafeIcon icon={FiCpu} /> Records Cleared</span>
+              <span className="text-sm font-bold text-emerald-400">{systemStatus.last_prune_run.count}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-slate-500 uppercase flex items-center gap-1"><SafeIcon icon={FiUser} /> Operator</span>
+              <span className="text-sm font-bold text-slate-200">{systemStatus.last_prune_run.operator_id}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <h3 className="text-sm font-semibold text-slate-200 mb-6 uppercase tracking-wider">Ecosystem Failure Rate (24h)</h3>
         <ReactECharts option={option} style={{ height: '300px' }} />
