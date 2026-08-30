@@ -46,7 +46,7 @@ export default function DlqRecords({ records, selectedIds, onSelect, onRowClick,
           {['all', 'pending', 'patched', 'resolved', 'failed'].map((f) => (
             <button
               key={f}
-              onClick={() => onFilterChange(f)}
+              onClick={() => { onSelect([]); onFilterChange(f); }}
               className={`px-4 py-1.5 rounded-md text-xs font-medium transition-all ${
                 filter === f 
                   ? 'bg-slate-800 text-cyan-400 shadow-sm' 

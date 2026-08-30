@@ -82,7 +82,7 @@ export const echoService = {
 
             const chunkHeaders = {
                 ...headers,
-                'Idempotency-Key': crypto.randomUUID()
+                'Idempotency-Key': (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substring(2)
             };
 
             const response = await fetch(apiUrl, {

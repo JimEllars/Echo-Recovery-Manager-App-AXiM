@@ -22,7 +22,7 @@ export async function pruneRecords(
   const cutoffTimestamp = sevenDaysAgo.toISOString();
 
   const queryParams = new URLSearchParams({
-    status: "eq.resolved",
+    status: "in.(resolved,failed,error)",
     updated_at: `lte.${cutoffTimestamp}`,
   });
 
@@ -112,7 +112,7 @@ export async function pruneRecords(
 
     const deletedRecords = (await response.json()) as any[];
     console.log(
-      `Successfully pruned ${deletedRecords.length} resolved records older than 7 days.`,
+      `Successfully pruned ${deletedRecords.length} orphaned records older than 7 days.`,
     );
 
     await updateKV({
