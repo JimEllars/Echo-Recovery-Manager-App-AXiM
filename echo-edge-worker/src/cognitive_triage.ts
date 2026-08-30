@@ -1,4 +1,5 @@
 import { Env, getCorsHeaders } from "./index";
+import { dispatchAlert } from "./utils/webhook";
 
 /**
  * Extracts valid JSON from a string that might be wrapped in Markdown code blocks.
@@ -42,6 +43,7 @@ function extractJsonFromMarkdown(llmResponse: string): any {
 export async function handleTriage(
   request: Request,
   env: Env,
+  ctx: ExecutionContext,
   operator_id: string,
 ): Promise<Response> {
   const requiredVars = [
@@ -276,6 +278,16 @@ export async function handleTriage(
     } catch (logErr) {
       console.error("Failed to write to audit log:", logErr);
     }
+
+    ctx.waitUntil(
+      dispatchAlert(env.AXIM_ALERT_WEBHOOK_URL, {
+        action: 'COGNITIVE_TRIAGE',
+        operator_id: operator_id,
+        target_record: recordId,
+        success_count: 1,
+        fail_count: 0,
+      } as any)
+    );
 
     // 4. Return the response
     return new Response(
