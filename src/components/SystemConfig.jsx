@@ -7,14 +7,14 @@ import { toast } from 'react-toastify';
 
 const { FiKey, FiGlobe, FiRefreshCw, FiAlertTriangle, FiTrash2, FiActivity } = FiIcons;
 
-export default function SystemConfig() {
+export default function SystemConfig({ records = [] }) {
   const [isPruning, setIsPruning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const configs = [
     { label: 'AXIM_INTERNAL_KEY', value: '••••••••••••••••', lastRotated: '2 days ago', icon: FiKey },
-    { label: 'EDGE_WORKER_URL', value: 'https://echo-edge.axim.workers.dev', lastRotated: 'Never', icon: FiGlobe },
+    { label: 'EDGE_WORKER_URL', value: import.meta.env.VITE_EDGE_WORKER_URL || 'https://echo-edge.axim.workers.dev', lastRotated: 'Live Bound', icon: FiGlobe },
     { label: 'AUTO_TRIAGE_THRESHOLD', value: '0.85 Confidence', lastRotated: '14 days ago', icon: FiRefreshCw },
   ];
 
@@ -95,15 +95,23 @@ export default function SystemConfig() {
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
         <h3 className="text-sm font-semibold text-slate-200 mb-4 uppercase tracking-wider">Ecosystem Node Ingress</h3>
         <div className="space-y-3">
-          {['Asguard WAF', 'Green Machine', 'Enrichment Bridge'].map((node, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
-              <span className="text-sm text-slate-300 font-medium">{node}</span>
-              <div className="flex items-center gap-4">
-                <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Polling Active</span>
-                <span className="text-xs text-slate-500 font-mono">cron: 0 * * * *</span>
-              </div>
-            </div>
-          ))}
+          {(() => {
+            const uniqueNodes = Array.from(new Set(records.map(r => r.source_node).filter(Boolean)));
+            const nodes = uniqueNodes.length > 0 ? uniqueNodes : ['Asguard WAF', 'Green Machine', 'Enrichment Bridge'];
+
+            return nodes.map((node, i) => {
+              const errorCount = records.filter(r => r.source_node === node && (r.status === 'pending' || r.status === 'failed')).length;
+              return (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0">
+                  <span className="text-sm text-slate-300 font-medium">{node} <span className="ml-2 text-xs text-red-400 bg-red-400/10 px-2 py-0.5 rounded">{errorCount} Errors</span></span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">Polling Active</span>
+                    <span className="text-xs text-slate-500 font-mono">cron: 0 * * * *</span>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </div>
 
